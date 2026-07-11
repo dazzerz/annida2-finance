@@ -67,11 +67,12 @@
           </div>
         </div>
 
-        <!-- Report Controls -->
         <div class="reports-controls">
           <div class="form-group" style="flex:1;min-width:150px;">
             <label class="form-label">Bulan</label>
-            <input type="month" class="form-input" id="report-month" />
+            <select class="form-select" id="report-month">
+              <option value="">Semua Bulan (All Time)</option>
+            </select>
           </div>
           <button class="btn btn-primary" id="generate-report-btn" style="align-self:flex-end;">
             🔄 Tampilkan Laporan
@@ -138,27 +139,42 @@
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
   <script type="module">
-    import { requireAuth, handleLogout } from '../js/auth.js';
+    import { getOptionalUser, handleLogout } from '../js/auth.js';
     import { showToast, setupThemeToggle, applySavedTheme, formatCurrency } from '../js/utils.js';
     import { fetchMonthlySummary, fetchMonthlyTrend, fetchCategoryBreakdown, fetchTransactions } from '../js/transactions.js';
     import { renderReportBarChart, renderReportDonutChart, setupChartDefaults } from '../js/charts.js';
     import { renderReportTransactions, exportToPDF } from '../js/reports.js';
 
-
     let userId = null;
     let currentReportData = null;
 
+    function populateMonthFilter() {
+      const select = document.getElementById('report-month');
+      if (!select) return;
+      const months = [];
+      const now = new Date();
+      // Generate last 12 months
+      for (let i = 0; i < 12; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        months.push(`<option value="${val}">${label}</option>`);
+      }
+      select.innerHTML = `<option value="">Semua Bulan (All Time)</option>` + months.join('');
+    }
+
     async function generateReport() {
       const monthInput = document.getElementById('report-month').value;
-      if (!monthInput) {
-        showToast('Pilih bulan terlebih dahulu.', 'warning');
-        return;
+      
+      let year = null, month = null;
+      let periodLabel = 'Keseluruhan (All Time)';
+      let transactionsFilter = {};
+      
+      if (monthInput) {
+        [year, month] = monthInput.split('-').map(Number);
+        periodLabel = new Date(year, month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        transactionsFilter = { month: monthInput };
       }
-
-      const [year, month] = monthInput.split('-').map(Number);
-      const periodLabel = new Date(year, month - 1).toLocaleDateString('id-ID', {
-        month: 'long', year: 'numeric'
-      });
 
       document.getElementById('report-period-label').textContent = periodLabel;
 
@@ -166,7 +182,7 @@
         fetchMonthlySummary(userId, year, month),
         fetchMonthlyTrend(userId),
         fetchCategoryBreakdown(userId, year, month),
-        fetchTransactions(userId, { month: monthInput }, 1, 200),
+        fetchTransactions(userId, transactionsFilter, 1, 1000), // Fetch up to 1000 for all time
       ]);
 
       // Update summary cards
@@ -195,7 +211,7 @@
         categoryBreakdown: breakdown,
       };
 
-      showToast('Laporan berhasil dibuat!', 'success');
+      showToast('Laporan berhasil dimuat!', 'success');
     }
 
     async function handleExportPDF() {
@@ -216,19 +232,31 @@
     async function init() {
       applySavedTheme();
 
-      const user = await requireAuth();
-      if (!user) return;
-      userId = user.id;
-
-      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
-      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-      document.getElementById('user-avatar').textContent = initials;
-      document.getElementById('nav-user-name').textContent = fullName;
-      document.getElementById('nav-user-email').textContent = user.email;
-      currentReportData && (currentReportData.userName = fullName);
+      const user = await getOptionalUser();
+      if (user) {
+        userId = user.id;
+        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+        const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        document.getElementById('user-avatar').textContent = initials;
+        document.getElementById('nav-user-name').textContent = fullName;
+        document.getElementById('nav-user-email').textContent = user.email;
+        document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      } else {
+        document.getElementById('user-avatar').textContent = 'G';
+        document.getElementById('nav-user-name').textContent = 'Guest';
+        document.getElementById('nav-user-email').textContent = 'Read-Only Access';
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
+          logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
+        }
+        currentReportData && (currentReportData.userName = 'Guest');
+      }
 
       // Sidebar
-      document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      if (user) {
+        document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      }
       document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
         document.getElementById('sidebar')?.classList.toggle('open');
         document.getElementById('sidebar-overlay')?.classList.toggle('show');
@@ -241,11 +269,9 @@
       setupThemeToggle('theme-toggle');
       setupChartDefaults();
 
-      // Default month = current
-      const now = new Date();
-      document.getElementById('report-month').value =
-        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
+      populateMonthFilter();
+      document.getElementById('report-month').value = '';
+      
       // Buttons
       document.getElementById('generate-report-btn').addEventListener('click', generateReport);
       document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);

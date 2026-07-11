@@ -2,7 +2,7 @@
 // ANNIDA2FINANCE - Main App Controller (Dashboard)
 // =====================================================
 import supabaseClient from './supabase.js';
-import { requireAuth, handleLogout } from './auth.js';
+import { getOptionalUser, handleLogout } from './auth.js';
 import { formatCurrency, formatDate, getMonthYear, showToast, setupThemeToggle, applySavedTheme } from './utils.js';
 import {
   fetchCategories, fetchMonthlySummary, fetchMonthlyTrend, fetchCategoryBreakdown,
@@ -33,20 +33,38 @@ function updateGreeting(user) {
   else if (hour < 15) greeting = 'Selamat Siang';
   else if (hour < 18) greeting = 'Selamat Sore';
 
-  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
-  const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('greeting-text', `${greeting}, 👋`);
-  set('user-name-display', fullName);
-  set('nav-user-name', fullName);
-  set('nav-user-email', user.email);
-  set('user-avatar', initials);
   set('current-date', new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' }));
+
+  if (user) {
+    const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+    const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    set('greeting-text', `${greeting}, 👋`);
+    set('user-name-display', fullName);
+    set('nav-user-name', fullName);
+    set('nav-user-email', user.email);
+    set('user-avatar', initials);
+  } else {
+    set('greeting-text', `${greeting}, 👋`);
+    set('user-name-display', 'Pengunjung');
+    set('nav-user-name', 'Guest');
+    set('nav-user-email', 'Read-Only Access');
+    set('user-avatar', 'G');
+    
+    // Hide Quick Actions
+    const quickActions = document.querySelector('.quick-actions');
+    if (quickActions) quickActions.style.display = 'none';
+    
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
+      logoutBtn.addEventListener('click', () => window.location.href = './login.html');
+    }
+  }
 }
 
 // ── Sidebar ───────────────────────────────────────
-function initSidebar() {
+function initSidebar(user) {
   document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
     document.getElementById('sidebar')?.classList.toggle('open');
     document.getElementById('sidebar-overlay')?.classList.toggle('show');
@@ -55,21 +73,24 @@ function initSidebar() {
     document.getElementById('sidebar')?.classList.remove('open');
     document.getElementById('sidebar-overlay')?.classList.remove('show');
   });
-  document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+  if (user) {
+    document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+  }
 }
 
 // ── Load dashboard data ───────────────────────────
 async function loadDashboard(user) {
   const { month, year } = getMonthYear();
+  const userId = user ? user.id : null;
 
   const [, summary, trend, catData, recent, budgets, spending] = await Promise.all([
-    fetchCategories(user.id),
-    fetchMonthlySummary(user.id, year, month),
-    fetchMonthlyTrend(user.id),
-    fetchCategoryBreakdown(user.id, year, month),
-    fetchRecentTransactions(user.id),
-    fetchBudgets(user.id, year, month),
-    fetchBudgetSpending(user.id, year, month),
+    fetchCategories(userId),
+    fetchMonthlySummary(userId, year, month),
+    fetchMonthlyTrend(userId),
+    fetchCategoryBreakdown(userId, year, month),
+    fetchRecentTransactions(userId),
+    fetchBudgets(userId, year, month),
+    fetchBudgetSpending(userId, year, month),
   ]);
 
   // Stats
@@ -123,11 +144,10 @@ function closeModal() {
 async function main() {
   applySavedTheme();
 
-  const user = await requireAuth();
-  if (!user) return;
+  const user = await getOptionalUser();
 
   updateGreeting(user);
-  initSidebar();
+  initSidebar(user);
   setupThemeToggle('theme-toggle');
 
   await loadDashboard(user);

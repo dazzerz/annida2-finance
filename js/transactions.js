@@ -10,7 +10,7 @@ const PAGE_SIZE = 10;
 // ── Fetch categories ──────────────────────────────
 export async function fetchCategories(userId) {
   const { data, error } = await supabaseClient
-    .from('categories').select('*').eq('user_id', userId).order('name');
+    .from('categories').select('*').order('name');
   if (error) return [];
   allCategories = data || [];
   return allCategories;
@@ -23,7 +23,6 @@ export async function fetchTransactions(userId, filters = {}, page = 1) {
   let query = supabaseClient
     .from('transactions')
     .select('*, categories(id, name, icon, color, type)', { count: 'exact' })
-    .eq('user_id', userId)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -48,12 +47,14 @@ export async function fetchTransactions(userId, filters = {}, page = 1) {
 
 // ── Monthly summary ───────────────────────────────
 export async function fetchMonthlySummary(userId, year, month) {
-  const mm = String(month).padStart(2, '0');
-  const start = `${year}-${mm}-01`;
-  const end = `${year}-${mm}-${new Date(year, month, 0).getDate()}`;
-  const { data, error } = await supabaseClient
-    .from('transactions').select('amount, type')
-    .eq('user_id', userId).gte('date', start).lte('date', end);
+  let query = supabaseClient.from('transactions').select('amount, type');
+  if (year && month) {
+    const mm = String(month).padStart(2, '0');
+    const start = `${year}-${mm}-01`;
+    const end = `${year}-${mm}-${new Date(year, month, 0).getDate()}`;
+    query = query.gte('date', start).lte('date', end);
+  }
+  const { data, error } = await query;
   if (error) return { income: 0, expense: 0 };
   const income = data.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
   const expense = data.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
@@ -77,12 +78,16 @@ export async function fetchMonthlyTrend(userId) {
 
 // ── Category breakdown for donut chart ───────────
 export async function fetchCategoryBreakdown(userId, year, month) {
-  const mm = String(month).padStart(2, '0');
-  const start = `${year}-${mm}-01`;
-  const end = `${year}-${mm}-${new Date(year, month, 0).getDate()}`;
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
     .from('transactions').select('amount, categories(name, color)')
-    .eq('user_id', userId).eq('type', 'expense').gte('date', start).lte('date', end);
+    .eq('type', 'expense');
+  if (year && month) {
+    const mm = String(month).padStart(2, '0');
+    const start = `${year}-${mm}-01`;
+    const end = `${year}-${mm}-${new Date(year, month, 0).getDate()}`;
+    query = query.gte('date', start).lte('date', end);
+  }
+  const { data, error } = await query;
   if (error || !data) return [];
   const grouped = {};
   data.forEach(t => {
@@ -98,7 +103,6 @@ export async function fetchCategoryBreakdown(userId, year, month) {
 export async function fetchRecentTransactions(userId, limit = 5) {
   const { data, error } = await supabaseClient
     .from('transactions').select('*, categories(name, icon, color, type)')
-    .eq('user_id', userId)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -127,16 +131,24 @@ export async function deleteTransaction(id) {
 }
 
 // ── Render table ──────────────────────────────────
-export function renderTransactionsTable(transactions) {
+export function renderTransactionsTable(transactions, canEdit = true) {
   const tbody = document.getElementById('transactions-tbody');
+  const thAksi = document.getElementById('th-aksi');
   if (!tbody) return;
+  if (!canEdit && thAksi) thAksi.style.display = 'none';
+
   if (!transactions.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">Belum ada transaksi</div><div class="empty-state-desc">Klik "+ Tambah Transaksi" untuk mulai mencatat</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${canEdit ? 7 : 6}"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">Belum ada transaksi</div><div class="empty-state-desc">Belum ada data yang bisa ditampilkan</div></div></td></tr>`;
     return;
   }
   tbody.innerHTML = transactions.map(t => {
     const cat = t.categories;
     const isIncome = t.type === 'income';
+    const actionHtml = canEdit ? `<td><div class="table-actions">
+        <button class="table-action-btn edit" onclick="editTransaction('${t.id}')" title="Edit">✏️</button>
+        <button class="table-action-btn delete" onclick="confirmDeleteTransaction('${t.id}')" title="Hapus">🗑️</button>
+      </div></td>` : '';
+      
     return `<tr>
       <td><span style="font-size:1.2rem">${cat?.icon || '💰'}</span></td>
       <td><div style="font-weight:600;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;padding-right:1rem;" title="${t.description || '-'}">${t.description || '-'}</div></td>
@@ -144,10 +156,7 @@ export function renderTransactionsTable(transactions) {
       <td><span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">${cat?.name || 'Lainnya'}</span></td>
       <td><span class="badge ${isIncome ? 'badge-income' : 'badge-expense'}">${isIncome ? '↑ Pemasukan' : '↓ Pengeluaran'}</span></td>
       <td class="transaction-amount ${t.type}">${isIncome ? '+' : '-'}${formatCurrency(t.amount)}</td>
-      <td><div class="table-actions">
-        <button class="table-action-btn edit" onclick="editTransaction('${t.id}')" title="Edit">✏️</button>
-        <button class="table-action-btn delete" onclick="confirmDeleteTransaction('${t.id}')" title="Hapus">🗑️</button>
-      </div></td>
+      ${actionHtml}
     </tr>`;
   }).join('');
 }

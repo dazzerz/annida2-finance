@@ -62,6 +62,17 @@ async function handleRegister(e) {
   }
   setLoading('register-btn', true);
 
+  // Cek Kuota Akun (Maks 5)
+  const { count, error: countErr } = await supabaseClient
+    .from('profiles')
+    .select('*', { count: 'exact', head: true });
+    
+  if (!countErr && count >= 5) {
+    showAuthMessage('Maaf, kuota pendaftaran sudah penuh (Maksimal 5 Akun).', 'error');
+    setLoading('register-btn', false);
+    return;
+  }
+
   const { data, error } = await supabaseClient.auth.signUp({
     email, password,
     options: { data: { full_name: name } },
@@ -105,6 +116,12 @@ export async function requireAuth() {
     window.location.href = isInPages ? '../login.html' : './login.html';
     return null;
   }
+  return user;
+}
+
+// ── OPTIONAL AUTH ─────────────────────────────────
+export async function getOptionalUser() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
   return user;
 }
 
