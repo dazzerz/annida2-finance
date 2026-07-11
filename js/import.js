@@ -330,6 +330,10 @@ export async function validateAndMapRows(rows, categories) {
         if (result && result.data) {
           const predictedLabels = (result.data[0] || '').split('|||');
           
+          if (!result.data[0]) {
+             alert("AI berhasil dipanggil, tapi mengembalikan teks kosong! Cek kode Python.");
+          }
+
           unmatchedBatch.forEach((r, index) => {
             const label = predictedLabels[index] ? predictedLabels[index].trim() : '';
             if (label) {
@@ -338,12 +342,15 @@ export async function validateAndMapRows(rows, categories) {
                 results[r.idx].categoryName = matchedCategory.name;
                 results[r.idx].category_id = matchedCategory.id;
                 results[r.idx].categoryIcon = matchedCategory.icon;
+              } else {
+                alert(`AI menjawab "${label}", tapi tidak ada di database!`);
               }
             }
           });
         }
       } catch (err) {
         console.error("AI Error:", err);
+        alert("Gagal koneksi ke AI: " + err.message);
       }
     }
 
