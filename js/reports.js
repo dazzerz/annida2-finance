@@ -50,15 +50,16 @@ export async function exportToPDF(reportData) {
     const totalExp = categoryBreakdown.reduce((s, c) => s + c.total, 0);
     categoryBreakdown.slice(0, 8).forEach(cat => {
       const pct = totalExp > 0 ? cat.total / totalExp : 0;
-      const barWidth = (pageWidth - margin * 2 - 40) * pct;
+      const maxBarWidth = pageWidth - margin * 2 - 65;
+      const barWidth = maxBarWidth * pct;
       doc.setTextColor(60,80,100); doc.setFontSize(9); doc.setFont('helvetica','normal');
-      doc.text(cat.name, margin, y + 5);
-      doc.text(formatCurrency(cat.total), pageWidth - margin, y + 5, { align: 'right' });
-      doc.setFillColor(230,235,245); doc.roundedRect(margin + 30, y, pageWidth - margin * 2 - 35, 5, 1, 1, 'F');
+      doc.text(cat.name, margin, y + 4.5);
+      doc.text(formatCurrency(cat.total), pageWidth - margin, y + 4.5, { align: 'right' });
+      doc.setFillColor(230,235,245); doc.roundedRect(margin + 25, y, maxBarWidth, 5, 1, 1, 'F');
       if (barWidth > 0) {
         const hex = cat.color || '#3b82f6';
         doc.setFillColor(parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16));
-        doc.roundedRect(margin + 30, y, barWidth, 5, 1, 1, 'F');
+        doc.roundedRect(margin + 25, y, barWidth, 5, 1, 1, 'F');
       }
       y += 10;
     });

@@ -147,6 +147,7 @@
 
     let userId = null;
     let currentReportData = null;
+    let currentUserName = 'Guest';
 
     function populateMonthFilter() {
       const select = document.getElementById('report-month');
@@ -203,7 +204,7 @@
       // Store for PDF export
       currentReportData = {
         period: periodLabel,
-        userName: userId,
+        userName: currentUserName,
         income: summary.income,
         expense: summary.expense,
         balance,
@@ -236,6 +237,7 @@
       if (user) {
         userId = user.id;
         const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+        currentUserName = fullName;
         const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
         document.getElementById('user-avatar').textContent = initials;
         document.getElementById('nav-user-name').textContent = fullName;
