@@ -503,7 +503,8 @@
             showToast('File kosong atau tidak ada data transaksi yang valid.', 'warning'); return;
           }
           const categories = getAllCategories();
-          parsedRows = validateAndMapRows(rawRows, categories);
+          showToast('Mengklasifikasikan dengan AI (bisa memakan waktu beberapa detik)...', 'info');
+          parsedRows = await validateAndMapRows(rawRows, categories);
 
           // Count
           const total = parsedRows.length;

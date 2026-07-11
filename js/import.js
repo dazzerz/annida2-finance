@@ -218,8 +218,9 @@ export function parseExcelFile(file) {
 }
 
 // ── Validasi & map rows ke format transaksi ────────
-export function validateAndMapRows(rows, categories) {
+export async function validateAndMapRows(rows, categories) {
   const results = [];
+  const unmatchedRows = [];
 
   rows.forEach((row, idx) => {
     const errors = [];
@@ -270,35 +271,11 @@ export function validateAndMapRows(rows, categories) {
 
     // Auto-categorize jika kategori kosong (biasanya dari file bank mutasi)
     if (!katNama && !matchedCat && description) {
-      const descLower = description.toLowerCase();
-      const keywords = {
-        'income': {
-          'gaji': ['gaji', 'salary', 'upah', 'honor', 'payroll'],
-          'bonus': ['bonus', 'thr'],
-          'hadiah': ['hadiah', 'gift', 'reward']
-        },
-        'expense': {
-          'makanan': ['makan', 'minum', 'resto', 'food', 'kopi', 'warteg', 'gofood', 'grabfood'],
-          'transport': ['transport', 'bensin', 'parkir', 'gojek', 'grab', 'tol', 'tiket', 'kereta'],
-          'tagihan': ['listrik', 'pln', 'air', 'pdam', 'internet', 'wifi', 'indihome', 'pulsa', 'biaya administrasi', 'adm', 'admin', 'pajak', 'pemindahbukuan'],
-          'belanja': ['belanja', 'supermarket', 'indomaret', 'alfamart', 'pasar', 'shopee', 'tokopedia'],
-          'kesehatan': ['obat', 'dokter', 'rs', 'klinik', 'apotek', 'bpjs'],
-          'pendidikan': ['buku', 'kursus', 'spp', 'sekolah', 'kuliah', 'kitab', 'seragam', 'lks', 'bendera']
-        }
-      };
-
-      const typeKeywords = keywords[type] || {};
-      let autoMatchedName = null;
-      for (const [catName, words] of Object.entries(typeKeywords)) {
-        if (words.some(w => descLower.includes(w))) {
-          autoMatchedName = catName;
-          break;
-        }
-      }
-
-      if (autoMatchedName) {
-        matchedCat = categories.find(c => c.type === type && c.name.toLowerCase().includes(autoMatchedName));
-      }
+      unmatchedRows.push({
+        idx: idx,
+        description: description,
+        type: type
+      });
     }
 
     const categoryId = matchedCat?.id || null;
@@ -320,6 +297,57 @@ export function validateAndMapRows(rows, categories) {
       _raw: row,
     });
   });
+
+  // --- HUGGING FACE AI INTEGRATION ---
+  if (unmatchedRows.length > 0) {
+    console.log(`Mengirim ${unmatchedRows.length} baris ke AI Hugging Face...`);
+    
+    // Pisahkan berdasarkan tipe agar pilihan kategorinya spesifik
+    const incomeRows = unmatchedRows.filter(r => r.type === 'income');
+    const expenseRows = unmatchedRows.filter(r => r.type === 'expense');
+
+    const incomeCategories = categories.filter(c => c.type === 'income').map(c => c.name);
+    const expenseCategories = categories.filter(c => c.type === 'expense').map(c => c.name);
+
+    async function fetchAI(unmatchedBatch, catList) {
+      if (unmatchedBatch.length === 0) return;
+      const descString = unmatchedBatch.map(r => r.description).join('|||');
+      const catString = catList.join(',');
+      
+      try {
+        const response = await fetch('https://dazzerz-annida2finance.hf.space/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: [descString, catString] })
+        });
+        
+        if (response.ok) {
+          const json = await response.json();
+          const predictedLabels = (json.data[0] || '').split('|||');
+          
+          unmatchedBatch.forEach((r, index) => {
+            const label = predictedLabels[index] ? predictedLabels[index].trim() : '';
+            if (label) {
+              const matchedCategory = categories.find(c => c.name.toLowerCase() === label.toLowerCase());
+              if (matchedCategory) {
+                results[r.idx].categoryName = matchedCategory.name;
+                results[r.idx].category_id = matchedCategory.id;
+                results[r.idx].categoryIcon = matchedCategory.icon;
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error("AI Error:", err);
+      }
+    }
+
+    // Panggil API secara paralel untuk Pemasukan dan Pengeluaran
+    await Promise.all([
+      fetchAI(incomeRows, incomeCategories),
+      fetchAI(expenseRows, expenseCategories)
+    ]);
+  }
 
   return results;
 }
