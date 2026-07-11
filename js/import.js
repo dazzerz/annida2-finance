@@ -115,6 +115,28 @@ export function parseExcelFile(file) {
           const debetIdx = headers.findIndex(h => h.toLowerCase() === 'debet');
           const kreditIdx = headers.findIndex(h => h.toLowerCase() === 'kredit');
 
+          // Helper: menyederhanakan deskripsi panjang dari BSI
+          const simplifyBSIDescription = (desc) => {
+            if (!desc) return '';
+            let s = String(desc).trim();
+            // Contoh: "BIFAST - TRF Ke - Bank BRI Jkt - Pembelian LKS" -> "Pembelian LKS"
+            if (s.startsWith('BIFAST - TRF Ke -')) {
+              const parts = s.split('-');
+              return parts[parts.length - 1].trim();
+            }
+            // Contoh: "Transport - TRF Ke - MUHAMMAD AZDY SOBRI" -> "Transport"
+            // Contoh: "Pelunasan seragam - TRF Ke - 014 - DEWI..." -> "Pelunasan seragam"
+            if (s.includes('- TRF Ke -')) {
+              return s.split('- TRF Ke -')[0].trim();
+            }
+            // Contoh: "Transfer Dari - FULAN - Gaji"
+            if (s.includes('- Transfer Dari -') || s.includes('TRF Dari')) {
+              const parts = s.split('-');
+              if (parts.length > 2) return parts[parts.length - 1].trim(); // Ambil bagian paling akhir
+            }
+            return s;
+          };
+
           dataRows.forEach(row => {
             if (!row[wTIdx] && !row[descIdx]) return;
             
@@ -139,7 +161,7 @@ export function parseExcelFile(file) {
             if (jumlah > 0) {
               mappedRows.push({
                 tanggal: tanggal,
-                keterangan: row[descIdx] || '',
+                keterangan: simplifyBSIDescription(row[descIdx]),
                 tipe: tipe,
                 kategori: '', // kosong, biarkan user mapping jika perlu, atau jadi 'Lainnya'
                 jumlah: jumlah
