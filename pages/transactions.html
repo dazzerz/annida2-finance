@@ -7,7 +7,8 @@
   <meta name="description" content="Kelola semua transaksi keuangan kamu — tambah, edit, filter, dan hapus dengan mudah." />
   <link rel="stylesheet" href="../css/global.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
-  
+  <!-- SheetJS untuk baca/buat Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -49,10 +50,11 @@
             <div class="topbar-title">Transaksi</div>
           </div>
         </div>
-        <div class="topbar-right">
-          <button class="theme-toggle" id="theme-toggle">☀️</button>
-          <button class="btn btn-primary btn-sm" id="add-transaction-btn">＋ Tambah Transaksi</button>
-        </div>
+          <div class="topbar-right">
+            <button class="theme-toggle" id="theme-toggle">☀️</button>
+            <button class="btn btn-ghost btn-sm" id="import-excel-btn" style="gap:0.4rem;">📥 Import Excel</button>
+            <button class="btn btn-primary btn-sm" id="add-transaction-btn">＋ Tambah Transaksi</button>
+          </div>
       </header>
 
       <main class="page-content">
@@ -158,18 +160,128 @@
     </div>
   </div>
 
+  <!-- ── IMPORT EXCEL MODAL ── -->
+  <div class="modal-overlay" id="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+    <div class="modal" style="max-width:680px;">
+      <div class="modal-header">
+        <h2 style="font-size:1.1rem;font-weight:700;" id="import-modal-title">📥 Import dari Excel</h2>
+        <button class="btn-icon btn-ghost" id="import-modal-close" aria-label="Tutup">✕</button>
+      </div>
+      <div class="modal-body" id="import-modal-body">
+
+        <!-- Step indicator -->
+        <div class="import-steps">
+          <div class="import-step active" id="step-1">
+            <div class="step-num">1</div> Upload File
+          </div>
+          <div class="step-divider"></div>
+          <div class="import-step" id="step-2">
+            <div class="step-num">2</div> Preview
+          </div>
+          <div class="step-divider"></div>
+          <div class="import-step" id="step-3">
+            <div class="step-num">3</div> Selesai
+          </div>
+        </div>
+
+        <!-- STEP 1: Upload & Template -->
+        <div id="import-step-1">
+          <!-- Template download banner -->
+          <div class="template-banner" style="margin-bottom:1.25rem;">
+            <div class="template-banner-text">
+              <strong>📋 Belum punya template?</strong>
+              Download template Excel, isi datanya, lalu upload kembali di sini.
+            </div>
+            <button class="btn btn-primary btn-sm" id="download-template-btn" style="flex-shrink:0;">
+              ⬇️ Download Template
+            </button>
+          </div>
+
+          <!-- Drop Zone -->
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" />
+            <div class="drop-zone-icon">📂</div>
+            <div class="drop-zone-title">Klik atau drag & drop file Excel di sini</div>
+            <div class="drop-zone-sub">Format yang didukung: .xlsx, .xls</div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Preview (hidden initially) -->
+        <div id="import-step-2" style="display:none;">
+          <div class="import-summary" id="import-summary">
+            <div class="import-summary-item total">
+              <div class="import-summary-num" id="summary-total">0</div>
+              <div class="import-summary-label">Total Baris</div>
+            </div>
+            <div class="import-summary-item valid">
+              <div class="import-summary-num" id="summary-valid">0</div>
+              <div class="import-summary-label">Siap Import</div>
+            </div>
+            <div class="import-summary-item warning">
+              <div class="import-summary-num" id="summary-warning">0</div>
+              <div class="import-summary-label">Peringatan</div>
+            </div>
+            <div class="import-summary-item error">
+              <div class="import-summary-num" id="summary-error">0</div>
+              <div class="import-summary-label">Error</div>
+            </div>
+          </div>
+
+          <div class="import-preview-wrapper">
+            <table class="import-preview-table">
+              <thead>
+                <tr>
+                  <th style="width:36px;"></th>
+                  <th>Tanggal</th>
+                  <th>Keterangan</th>
+                  <th>Tipe</th>
+                  <th>Kategori</th>
+                  <th style="text-align:right;">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody id="import-preview-tbody"></tbody>
+            </table>
+          </div>
+
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;">
+            ⚠️ Baris dengan peringatan (kategori tidak ditemukan) tetap akan diimport tanpa kategori.<br>
+            ❌ Baris dengan error tidak akan diimport.
+          </p>
+        </div>
+
+        <!-- STEP 3: Success (hidden) -->
+        <div id="import-step-3" style="display:none;text-align:center;padding:1.5rem 0;">
+          <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+          <div style="font-size:1.25rem;font-weight:700;color:var(--income-color);margin-bottom:0.5rem;" id="import-success-text">Import berhasil!</div>
+          <div style="font-size:0.875rem;color:var(--text-muted);">Data transaksi sudah tersimpan ke database.</div>
+        </div>
+
+      </div>
+      <div class="modal-footer" id="import-modal-footer">
+        <button type="button" class="btn btn-ghost" id="import-cancel-btn">Batal</button>
+        <button type="button" class="btn btn-primary" id="import-confirm-btn" style="display:none;">
+          ✅ Import <span id="import-count">0</span> Transaksi
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
 
   <script type="module">
     import supabaseClient from '../js/supabase.js';
     import { requireAuth, handleLogout } from '../js/auth.js';
-    import { showToast, setupThemeToggle, applySavedTheme } from '../js/utils.js';
+    import { showToast, setupThemeToggle, applySavedTheme, formatCurrency, formatDate } from '../js/utils.js';
     import {
       fetchCategories, fetchTransactions, addTransaction, updateTransaction,
       deleteTransaction, renderTransactionsTable, renderPagination,
-      populateCategoryDropdown
+      populateCategoryDropdown, getAllCategories
     } from '../js/transactions.js';
+    import {
+      downloadTemplate, parseExcelFile, validateAndMapRows, bulkInsertTransactions
+    } from '../js/import.js';
 
     const PAGE_SIZE = 10;
     let currentPage = 1;
@@ -347,9 +459,144 @@
       document.getElementById('transaction-modal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeModal();
       });
+
+      // ── IMPORT EXCEL ─────────────────────────────
+      let parsedRows = [];
+
+      function setImportStep(step) {
+        [1,2,3].forEach(n => {
+          const el = document.getElementById(`import-step-${n}`);
+          const stepEl = document.getElementById(`step-${n}`);
+          if (el) el.style.display = n === step ? (n === 3 ? 'block' : 'block') : 'none';
+          if (stepEl) {
+            stepEl.classList.remove('active','done');
+            if (n < step) stepEl.classList.add('done');
+            else if (n === step) stepEl.classList.add('active');
+          }
+        });
+      }
+
+      function openImportModal() {
+        parsedRows = [];
+        document.getElementById('import-modal').classList.add('active');
+        document.getElementById('import-confirm-btn').style.display = 'none';
+        document.getElementById('excel-file-input').value = '';
+        setImportStep(1);
+      }
+
+      function closeImportModal() {
+        document.getElementById('import-modal').classList.remove('active');
+      }
+
+      async function handleFileSelected(file) {
+        if (!file) return;
+        const allowed = ['.xlsx','.xls','.csv'];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (!allowed.includes(ext)) {
+          showToast('Format file tidak didukung. Gunakan .xlsx atau .xls', 'error'); return;
+        }
+        try {
+          showToast('Membaca file...', 'info');
+          const rawRows = await parseExcelFile(file);
+          if (!rawRows.length) {
+            showToast('File kosong atau tidak ada data transaksi yang valid.', 'warning'); return;
+          }
+          const categories = getAllCategories();
+          parsedRows = validateAndMapRows(rawRows, categories);
+
+          // Count
+          const total = parsedRows.length;
+          const valid = parsedRows.filter(r => r.valid).length;
+          const warnings = parsedRows.filter(r => r.errors.some(e => e.includes('tidak ditemukan'))).length;
+          const errors = parsedRows.filter(r => !r.valid).length;
+          const importable = parsedRows.filter(r => r.valid).length;
+
+          document.getElementById('summary-total').textContent = total;
+          document.getElementById('summary-valid').textContent = valid;
+          document.getElementById('summary-warning').textContent = warnings;
+          document.getElementById('summary-error').textContent = errors;
+          document.getElementById('import-count').textContent = importable;
+
+          // Render preview table
+          const tbody = document.getElementById('import-preview-tbody');
+          tbody.innerHTML = parsedRows.map(r => {
+            const hasErr = !r.valid && !r.errors.every(e => e.includes('tidak ditemukan'));
+            const hasWarn = r.errors.some(e => e.includes('tidak ditemukan'));
+            const rowClass = hasErr ? 'has-error' : (hasWarn ? 'has-warning' : '');
+            const statusIcon = hasErr ? '❌' : (hasWarn ? '⚠️' : '✅');
+            const statusClass = hasErr ? 'err' : (hasWarn ? 'warn' : 'ok');
+            const isIncome = r.type === 'income';
+            const tooltip = r.errors.length ? r.errors.join(' | ') : '';
+            return `<tr class="${rowClass}" title="${tooltip}">
+              <td><div class="row-status ${statusClass}">${statusIcon}</div></td>
+              <td>${r.date || '—'}</td>
+              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.description || '—'}</td>
+              <td><span class="badge ${isIncome ? 'badge-income' : 'badge-expense'}" style="font-size:.7rem">${isIncome ? '↑ Masuk' : '↓ Keluar'}</span></td>
+              <td>${r.categoryIcon} ${r.categoryName}</td>
+              <td style="text-align:right;font-weight:600;color:var(--${isIncome?'income':'expense'}-color)">${isIncome?'+':'-'}${formatCurrency(r.amount)}</td>
+            </tr>`;
+          }).join('');
+
+          document.getElementById('import-confirm-btn').style.display = importable > 0 ? 'flex' : 'none';
+          setImportStep(2);
+        } catch(err) {
+          showToast('Gagal baca file: ' + err.message, 'error');
+        }
+      }
+
+      // Drag & drop
+      const dropZone = document.getElementById('drop-zone');
+      dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+      dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+      dropZone?.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) handleFileSelected(file);
+      });
+
+      document.getElementById('excel-file-input')?.addEventListener('change', e => {
+        handleFileSelected(e.target.files?.[0]);
+      });
+
+      // Download template
+      document.getElementById('download-template-btn')?.addEventListener('click', () => {
+        downloadTemplate(getAllCategories());
+      });
+
+      // Confirm import
+      document.getElementById('import-confirm-btn')?.addEventListener('click', async () => {
+        const toImport = parsedRows.filter(r => r.valid);
+        if (!toImport.length) { showToast('Tidak ada data yang bisa diimport.', 'warning'); return; }
+        const btn = document.getElementById('import-confirm-btn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Mengimport...';
+        try {
+          await bulkInsertTransactions(userId, toImport);
+          document.getElementById('import-success-text').textContent =
+            `${toImport.length} transaksi berhasil diimport! 🎉`;
+          setImportStep(3);
+          document.getElementById('import-confirm-btn').style.display = 'none';
+          document.getElementById('import-cancel-btn').textContent = 'Tutup';
+          showToast(`${toImport.length} transaksi berhasil diimport!`, 'success');
+          loadTransactions();
+        } catch(err) {
+          showToast('Gagal import: ' + err.message, 'error');
+          btn.disabled = false;
+          btn.innerHTML = `✅ Import <span id="import-count">${toImport.length}</span> Transaksi`;
+        }
+      });
+
+      document.getElementById('import-excel-btn')?.addEventListener('click', openImportModal);
+      document.getElementById('import-modal-close')?.addEventListener('click', closeImportModal);
+      document.getElementById('import-cancel-btn')?.addEventListener('click', closeImportModal);
+      document.getElementById('import-modal')?.addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeImportModal();
+      });
     }
 
     init();
   </script>
+
 </body>
 </html>
