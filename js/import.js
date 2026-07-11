@@ -74,13 +74,29 @@ export function parseExcelFile(file) {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: 'array', cellDates: true });
-
-        const sheetName = wb.SheetNames[0];
-        const sheet = wb.Sheets[sheetName];
+        let aoa = [];
         
-        // Baca sebagai array of arrays
-        const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        try {
+          const wb = XLSX.read(data, { type: 'array', cellDates: true });
+          const sheetName = wb.SheetNames[0];
+          const sheet = wb.Sheets[sheetName];
+          aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        } catch (readErr) {
+          // Fallback: Bank sering export file HTML biasa yang di-rename jadi .xls
+          // Jika SheetJS gagal baca karena "Invalid HTML" atau sejenisnya, kita parse manual
+          if (readErr.message && String(readErr.message).toLowerCase().includes('html')) {
+            const text = new TextDecoder('utf-8').decode(data);
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const rows = doc.querySelectorAll('tr');
+            if (rows.length === 0) throw new Error('Tabel tidak ditemukan di dalam file XLS/HTML ini.');
+            aoa = Array.from(rows).map(tr => 
+              Array.from(tr.querySelectorAll('td, th')).map(td => td.innerText.trim())
+            );
+          } else {
+            throw readErr;
+          }
+        }
         
         let headerRowIdx = -1;
         let templateType = 'standard'; // 'standard' | 'bsi'
