@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Annida2Finance</title>
+  <meta name="description" content="Dashboard keuangan pribadi Annida2Finance. Pantau pemasukan, pengeluaran, dan budget dalam satu tempat." />
+  <link rel="stylesheet" href="./css/global.css" />
+  <link rel="stylesheet" href="./css/dashboard.css" />
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar" aria-label="Navigasi utama">
+      <div class="sidebar-header">
+        <div class="sidebar-logo" aria-hidden="true">💹</div>
+        <span class="sidebar-title">Annida2Finance</span>
+      </div>
+
+      <div class="sidebar-nav">
+        <span class="nav-section-label">Menu Utama</span>
+        <a href="./index.html" class="nav-item" id="nav-dashboard">
+          <span class="nav-icon">🏠</span> Dashboard
+        </a>
+        <a href="./pages/transactions.html" class="nav-item" id="nav-transactions">
+          <span class="nav-icon">💸</span> Transaksi
+        </a>
+        <a href="./pages/budget.html" class="nav-item" id="nav-budget">
+          <span class="nav-icon">💰</span> Budget
+        </a>
+        <a href="./pages/reports.html" class="nav-item" id="nav-reports">
+          <span class="nav-icon">📄</span> Laporan
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="nav-user-name">Memuat...</div>
+            <div class="user-email" id="nav-user-email">—</div>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="logout-btn" aria-label="Keluar">
+          <span>🚪</span> Keluar
+        </button>
+      </div>
+    </nav>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="flex items-center gap-md">
+          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Buka menu">☰</button>
+          <div class="topbar-left">
+            <div class="topbar-greeting" id="greeting-text">Selamat Datang, 👋</div>
+            <div class="topbar-title" id="user-name-display">Memuat...</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="current-date"></div>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Ganti tema">☀️</button>
+          <button class="btn btn-primary btn-sm" id="add-transaction-btn" style="gap:0.4rem;">
+            ＋ Transaksi
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content">
+
+        <!-- Period label -->
+        <div style="margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;">
+          <h1 style="font-size:1.1rem;font-weight:700;color:var(--text-secondary);">
+            📅 <span id="period-label">Memuat...</span>
+          </h1>
+          <a href="./pages/transactions.html" class="btn btn-ghost btn-sm">Lihat Semua Transaksi →</a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid stagger" role="region" aria-label="Ringkasan keuangan">
+          <div class="stat-card income">
+            <div class="stat-card-header">
+              <div class="stat-icon income" aria-hidden="true">💚</div>
+              <div class="stat-trend up" aria-label="Tren naik">↑ Bulan ini</div>
+            </div>
+            <div class="stat-value" id="stat-income">Rp0</div>
+            <div class="stat-label">Total Pemasukan</div>
+          </div>
+          <div class="stat-card expense">
+            <div class="stat-card-header">
+              <div class="stat-icon expense" aria-hidden="true">🔴</div>
+              <div class="stat-trend down" aria-label="Pengeluaran">↓ Bulan ini</div>
+            </div>
+            <div class="stat-value" id="stat-expense">Rp0</div>
+            <div class="stat-label">Total Pengeluaran</div>
+          </div>
+          <div class="stat-card balance">
+            <div class="stat-card-header">
+              <div class="stat-icon balance" aria-hidden="true">💵</div>
+              <div class="stat-trend up">= Bersih</div>
+            </div>
+            <div class="stat-value" id="stat-balance">Rp0</div>
+            <div class="stat-label">Saldo Bersih</div>
+          </div>
+          <div class="stat-card savings">
+            <div class="stat-card-header">
+              <div class="stat-icon savings" aria-hidden="true">🎯</div>
+              <div class="stat-trend up">Target</div>
+            </div>
+            <div class="stat-value" style="background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Atur Budget</div>
+            <div class="stat-label"><a href="./pages/budget.html" style="color:var(--accent-primary);">→ Kelola Budget</a></div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid" role="region" aria-label="Grafik keuangan">
+          <!-- Line Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Tren Keuangan (6 Bulan)</div>
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <div class="legend-dot" style="background:#10b981;"></div>
+                  Pemasukan
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background:#ef4444;"></div>
+                  Pengeluaran
+                </div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+              <canvas id="trend-chart" aria-label="Grafik tren keuangan 6 bulan"></canvas>
+            </div>
+          </div>
+
+          <!-- Donut Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Pengeluaran Bulan Ini</div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height:160px;">
+              <canvas id="donut-chart" aria-label="Grafik pengeluaran per kategori"></canvas>
+            </div>
+            <div class="donut-labels" id="donut-legend"></div>
+          </div>
+        </div>
+
+        <!-- Bottom Grid -->
+        <div class="bottom-grid">
+          <!-- Recent Transactions -->
+          <div class="recent-card">
+            <div class="section-header">
+              <span class="section-title">Transaksi Terbaru</span>
+              <a href="./pages/transactions.html" class="section-link">Lihat Semua →</a>
+            </div>
+            <div id="recent-transactions" role="list">
+              <div class="empty-state" style="padding:2rem;">
+                <div class="spinner spinner-lg"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Budget Overview -->
+          <div class="budget-card">
+            <div class="section-header">
+              <span class="section-title">Budget Bulan Ini</span>
+              <a href="./pages/budget.html" class="section-link">Atur →</a>
+            </div>
+            <div class="budget-items" id="budget-overview">
+              <div class="empty-state" style="padding:2rem;">
+                <div class="spinner spinner-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ── ADD TRANSACTION MODAL ── -->
+  <div class="modal-overlay" id="transaction-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="font-size:1.1rem;font-weight:700;" id="modal-title">Tambah Transaksi</h2>
+        <button class="btn-icon btn-ghost" id="modal-close-btn" aria-label="Tutup modal">✕</button>
+      </div>
+      <form id="transaction-form">
+        <div class="modal-body">
+          <!-- Type -->
+          <div class="form-group">
+            <label class="form-label" for="modal-type">Tipe Transaksi</label>
+            <select class="form-select" id="modal-type" required>
+              <option value="expense">💸 Pengeluaran</option>
+              <option value="income">💚 Pemasukan</option>
+            </select>
+          </div>
+
+          <!-- Category -->
+          <div class="form-group">
+            <label class="form-label" for="modal-category">Kategori</label>
+            <select class="form-select" id="modal-category">
+              <option value="">-- Pilih Kategori --</option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label" for="modal-description">Keterangan</label>
+            <input type="text" class="form-input" id="modal-description" placeholder="Contoh: Makan siang di warteg" />
+          </div>
+
+          <!-- Amount -->
+          <div class="form-group">
+            <label class="form-label" for="modal-amount">Jumlah (Rp) <span style="color:var(--expense-color)">*</span></label>
+            <input type="number" class="form-input" id="modal-amount" placeholder="0" min="1" step="1000" required />
+          </div>
+
+          <!-- Date -->
+          <div class="form-group">
+            <label class="form-label" for="modal-date">Tanggal <span style="color:var(--expense-color)">*</span></label>
+            <input type="date" class="form-input" id="modal-date" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="modal-cancel-btn">Batal</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit-btn">Simpan Transaksi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

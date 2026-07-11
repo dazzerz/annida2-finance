@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Annida2Finance</title>
+  <meta name="description" content="Login ke Annida2Finance dan kelola keuangan pribadimu dengan mudah dan cerdas." />
+  <link rel="stylesheet" href="./css/global.css" />
+  <link rel="stylesheet" href="./css/auth.css" />
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <div class="auth-page">
+
+    <!-- ── LEFT PANEL: Branding ── -->
+    <aside class="auth-panel">
+      <div class="auth-panel-content">
+        <div class="auth-logo">
+          <div class="auth-logo-icon">💹</div>
+          <span class="auth-logo-text">Annida2Finance</span>
+        </div>
+
+        <div class="auth-illustration">
+          <div class="auth-illustration-card">
+            <div class="stats-mini">
+              <div class="stat-mini-card">
+                <div class="stat-mini-label">Pemasukan</div>
+                <div class="stat-mini-value income">Rp8,5jt</div>
+              </div>
+              <div class="stat-mini-card">
+                <div class="stat-mini-label">Pengeluaran</div>
+                <div class="stat-mini-value expense">Rp3,2jt</div>
+              </div>
+            </div>
+            <div class="mini-bar-chart" id="mini-bars">
+              <div class="mini-bar" style="height:50%"></div>
+              <div class="mini-bar" style="height:75%"></div>
+              <div class="mini-bar" style="height:40%"></div>
+              <div class="mini-bar" style="height:90%"></div>
+              <div class="mini-bar" style="height:65%"></div>
+              <div class="mini-bar" style="height:80%"></div>
+              <div class="mini-bar" style="height:55%"></div>
+            </div>
+          </div>
+        </div>
+
+        <h1 class="auth-tagline">
+          Kelola Keuanganmu<br />
+          dengan <span>Lebih Cerdas</span>
+        </h1>
+        <p class="auth-subtitle">
+          Pantau pemasukan & pengeluaran, atur budget, dan buat laporan keuangan hanya dalam satu platform.
+        </p>
+
+        <div class="auth-features">
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">📊</div>
+            Dashboard grafik interaktif real-time
+          </div>
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">💰</div>
+            Manajemen budget per kategori
+          </div>
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">📄</div>
+            Export laporan PDF kapan saja
+          </div>
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon">🔐</div>
+            Aman & terenkripsi dengan Supabase
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── RIGHT PANEL: Form ── -->
+    <main class="auth-form-section">
+      <!-- Theme Toggle -->
+      <button class="auth-theme-toggle" id="auth-theme-toggle" aria-label="Toggle tema">☀️</button>
+
+      <div class="auth-form-wrapper">
+        <div class="auth-form-header">
+          <h2 class="auth-form-title">Selamat Datang! 👋</h2>
+          <p class="auth-form-subtitle">Masuk ke akun kamu atau daftar akun baru</p>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="auth-tabs" role="tablist">
+          <button class="auth-tab-btn active" data-tab="login" id="tab-login" role="tab">Masuk</button>
+          <button class="auth-tab-btn" data-tab="register" id="tab-register" role="tab">Daftar</button>
+        </div>
+
+        <!-- Auth Message -->
+        <div class="auth-message" id="auth-message" role="alert"></div>
+
+        <!-- ── LOGIN FORM ── -->
+        <div class="auth-form-panel active" id="login-panel">
+          <form id="login-form" novalidate>
+            <div class="auth-form-panel active" style="gap:1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="login-email">Email</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📧</span>
+                  <input
+                    type="email"
+                    id="login-email"
+                    class="form-input"
+                    placeholder="contoh@email.com"
+                    autocomplete="email"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="login-password">Password</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔒</span>
+                  <input
+                    type="password"
+                    id="login-password"
+                    class="form-input"
+                    placeholder="Masukkan password"
+                    autocomplete="current-password"
+                    required
+                  />
+                  <button type="button" class="input-toggle" data-toggle-password="login-password" aria-label="Tampilkan password">👁️</button>
+                </div>
+              </div>
+
+              <div class="auth-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="remember-me" />
+                  Ingat saya
+                </label>
+                <a href="#" class="forgot-link">Lupa password?</a>
+              </div>
+
+              <button type="submit" class="auth-submit-btn" id="login-btn">
+                <span class="btn-text">Masuk Sekarang →</span>
+                <div class="spinner spinner-sm"></div>
+              </button>
+
+              <div class="auth-divider">atau</div>
+
+              <p style="text-align:center;font-size:0.875rem;color:var(--text-muted)">
+                Belum punya akun?
+                <a href="#" style="color:var(--accent-primary);font-weight:600;" onclick="document.getElementById('tab-register').click();return false;">
+                  Daftar gratis
+                </a>
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── REGISTER FORM ── -->
+        <div class="auth-form-panel" id="register-panel">
+          <form id="register-form" novalidate>
+            <div class="auth-form-panel active" style="gap:1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="register-name">Nama Lengkap</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">👤</span>
+                  <input
+                    type="text"
+                    id="register-name"
+                    class="form-input"
+                    placeholder="Nama kamu"
+                    autocomplete="name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="register-email">Email</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📧</span>
+                  <input
+                    type="email"
+                    id="register-email"
+                    class="form-input"
+                    placeholder="contoh@email.com"
+                    autocomplete="email"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="register-password">Password</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔒</span>
+                  <input
+                    type="password"
+                    id="register-password"
+                    class="form-input"
+                    placeholder="Minimal 6 karakter"
+                    autocomplete="new-password"
+                    required
+                  />
+                  <button type="button" class="input-toggle" data-toggle-password="register-password" aria-label="Tampilkan password">👁️</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="register-confirm">Konfirmasi Password</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔒</span>
+                  <input
+                    type="password"
+                    id="register-confirm"
+                    class="form-input"
+                    placeholder="Ulangi password"
+                    autocomplete="new-password"
+                    required
+                  />
+                  <button type="button" class="input-toggle" data-toggle-password="register-confirm" aria-label="Tampilkan password">👁️</button>
+                </div>
+              </div>
+
+              <button type="submit" class="auth-submit-btn" id="register-btn">
+                <span class="btn-text">Buat Akun Gratis →</span>
+                <div class="spinner spinner-sm"></div>
+              </button>
+
+              <p style="text-align:center;font-size:0.8rem;color:var(--text-muted);">
+                Dengan mendaftar, kamu menyetujui syarat & ketentuan penggunaan.
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module" src="./js/auth.js"></script>
+  <script type="module">
+    import { initAuthPage } from './js/auth.js';
+    initAuthPage();
+  </script>
+</body>
+</html>

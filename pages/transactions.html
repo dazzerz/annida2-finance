@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transaksi — Annida2Finance</title>
+  <meta name="description" content="Kelola semua transaksi keuangan kamu — tambah, edit, filter, dan hapus dengan mudah." />
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar" aria-label="Navigasi utama">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">💹</div>
+        <span class="sidebar-title">Annida2Finance</span>
+      </div>
+      <div class="sidebar-nav">
+        <span class="nav-section-label">Menu Utama</span>
+        <a href="../index.html" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="./transactions.html" class="nav-item active"><span class="nav-icon">💸</span> Transaksi</a>
+        <a href="./budget.html" class="nav-item"><span class="nav-icon">💰</span> Budget</a>
+        <a href="./reports.html" class="nav-item"><span class="nav-icon">📄</span> Laporan</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="nav-user-name">Memuat...</div>
+            <div class="user-email" id="nav-user-email">—</div>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="logout-btn">🚪 Keluar</button>
+      </div>
+    </nav>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="flex items-center gap-md">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <div class="topbar-left">
+            <div class="topbar-greeting">Kelola</div>
+            <div class="topbar-title">Transaksi</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="theme-toggle">☀️</button>
+          <button class="btn btn-primary btn-sm" id="add-transaction-btn">＋ Tambah Transaksi</button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Semua Transaksi</h1>
+            <p class="page-subtitle">Catat dan pantau setiap pemasukan & pengeluaranmu</p>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="search-input" placeholder="Cari keterangan transaksi..." />
+          </div>
+          <select class="filter-select" id="filter-type">
+            <option value="">Semua Tipe</option>
+            <option value="income">💚 Pemasukan</option>
+            <option value="expense">🔴 Pengeluaran</option>
+          </select>
+          <select class="filter-select" id="filter-category">
+            <option value="">Semua Kategori</option>
+          </select>
+          <input type="month" class="filter-select" id="filter-month" style="color:var(--text-secondary);" />
+          <button class="btn btn-ghost btn-sm" id="clear-filter-btn">✕ Reset</button>
+        </div>
+
+        <!-- Table -->
+        <div class="transactions-table-wrapper">
+          <table class="transactions-table" aria-label="Daftar transaksi">
+            <thead>
+              <tr>
+                <th style="width:50px;"></th>
+                <th>Keterangan</th>
+                <th>Tanggal</th>
+                <th>Tipe</th>
+                <th>Jumlah</th>
+                <th style="text-align:right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-tbody">
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state" style="padding:3rem;">
+                    <div class="spinner spinner-lg"></div>
+                    <div class="empty-state-title">Memuat transaksi...</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Pagination -->
+          <div class="pagination">
+            <div class="pagination-info" id="pagination-info">—</div>
+            <div class="pagination-controls" id="pagination-controls"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ── TRANSACTION MODAL ── -->
+  <div class="modal-overlay" id="transaction-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="font-size:1.1rem;font-weight:700;" id="modal-title">Tambah Transaksi</h2>
+        <button class="btn-icon btn-ghost" id="modal-close-btn" aria-label="Tutup">✕</button>
+      </div>
+      <form id="transaction-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="modal-type">Tipe</label>
+            <select class="form-select" id="modal-type" required>
+              <option value="expense">💸 Pengeluaran</option>
+              <option value="income">💚 Pemasukan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-category">Kategori</label>
+            <select class="form-select" id="modal-category">
+              <option value="">-- Pilih Kategori --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-description">Keterangan</label>
+            <input type="text" class="form-input" id="modal-description" placeholder="Contoh: Makan siang" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-amount">Jumlah (Rp) *</label>
+            <input type="number" class="form-input" id="modal-amount" placeholder="0" min="1" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-date">Tanggal *</label>
+            <input type="date" class="form-input" id="modal-date" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="modal-cancel-btn">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module">
+    import supabaseClient from '../js/supabase.js';
+    import { requireAuth, handleLogout, setupThemeToggle, showToast } from '../js/auth.js';
+    import {
+      fetchCategories, fetchTransactions, addTransaction, updateTransaction,
+      deleteTransaction, renderTransactionsTable, renderPagination,
+      populateCategoryDropdown
+    } from '../js/transactions.js';
+    import { formatCurrency, formatDate } from '../js/app.js';
+
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+    let userId = null;
+    let editingId = null;
+    let filters = { search: '', type: '', categoryId: '', month: '' };
+
+    async function loadTransactions() {
+      const { data, count } = await fetchTransactions(userId, filters, currentPage);
+      renderTransactionsTable(data);
+      renderPagination(count, currentPage);
+    }
+
+    // Global pagination handler
+    window.goToPage = (page) => {
+      currentPage = page;
+      loadTransactions();
+    };
+
+    // Edit
+    window.editTransaction = async (id) => {
+      const { data } = await supabaseClient.from('transactions').select('*').eq('id', id).single();
+      if (!data) return;
+      editingId = id;
+      document.getElementById('modal-title').textContent = 'Edit Transaksi';
+      document.getElementById('modal-type').value = data.type;
+      document.getElementById('modal-description').value = data.description || '';
+      document.getElementById('modal-amount').value = data.amount;
+      document.getElementById('modal-date').value = data.date;
+      populateCategoryDropdown(data.type);
+      setTimeout(() => { document.getElementById('modal-category').value = data.category_id || ''; }, 50);
+      document.getElementById('transaction-modal').classList.add('active');
+    };
+
+    // Delete
+    window.confirmDeleteTransaction = async (id) => {
+      if (!confirm('Hapus transaksi ini?')) return;
+      try {
+        await deleteTransaction(id);
+        showToast('Transaksi dihapus.', 'success');
+        loadTransactions();
+      } catch (e) {
+        showToast('Gagal menghapus: ' + e.message, 'error');
+      }
+    };
+
+    function openModal() {
+      editingId = null;
+      document.getElementById('modal-title').textContent = 'Tambah Transaksi';
+      document.getElementById('transaction-form').reset();
+      document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
+      populateCategoryDropdown('expense');
+      document.getElementById('transaction-modal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('transaction-modal').classList.remove('active');
+    }
+
+    async function init() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
+      const user = await requireAuth();
+      if (!user) return;
+      userId = user.id;
+
+      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      document.getElementById('user-avatar').textContent = initials;
+      document.getElementById('nav-user-name').textContent = fullName;
+      document.getElementById('nav-user-email').textContent = user.email;
+
+      // Sidebar
+      document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.toggle('open');
+        document.getElementById('sidebar-overlay')?.classList.toggle('show');
+      });
+      document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sidebar-overlay')?.classList.remove('show');
+      });
+
+      setupThemeToggle('theme-toggle');
+
+      // Load categories
+      const categories = await fetchCategories(userId);
+
+      // Populate category filter
+      const catFilter = document.getElementById('filter-category');
+      catFilter.innerHTML = '<option value="">Semua Kategori</option>' +
+        categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+
+      // Set default month
+      const now = new Date();
+      document.getElementById('filter-month').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      filters.month = document.getElementById('filter-month').value;
+
+      // Initial load
+      loadTransactions();
+
+      // Filters
+      let searchTimeout;
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          filters.search = e.target.value;
+          currentPage = 1;
+          loadTransactions();
+        }, 400);
+      });
+
+      document.getElementById('filter-type').addEventListener('change', (e) => {
+        filters.type = e.target.value;
+        currentPage = 1;
+        loadTransactions();
+      });
+
+      document.getElementById('filter-category').addEventListener('change', (e) => {
+        filters.categoryId = e.target.value;
+        currentPage = 1;
+        loadTransactions();
+      });
+
+      document.getElementById('filter-month').addEventListener('change', (e) => {
+        filters.month = e.target.value;
+        currentPage = 1;
+        loadTransactions();
+      });
+
+      document.getElementById('clear-filter-btn').addEventListener('click', () => {
+        filters = { search: '', type: '', categoryId: '', month: '' };
+        document.getElementById('search-input').value = '';
+        document.getElementById('filter-type').value = '';
+        document.getElementById('filter-category').value = '';
+        document.getElementById('filter-month').value = '';
+        currentPage = 1;
+        loadTransactions();
+      });
+
+      // Modal type change
+      document.getElementById('modal-type').addEventListener('change', (e) => {
+        populateCategoryDropdown(e.target.value);
+      });
+
+      // Form submit
+      document.getElementById('transaction-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          type: document.getElementById('modal-type').value,
+          description: document.getElementById('modal-description').value.trim(),
+          amount: parseFloat(document.getElementById('modal-amount').value),
+          date: document.getElementById('modal-date').value,
+          category_id: document.getElementById('modal-category').value || null,
+        };
+        try {
+          if (editingId) {
+            await updateTransaction(editingId, payload);
+            showToast('Transaksi diperbarui!', 'success');
+          } else {
+            await addTransaction(userId, payload);
+            showToast('Transaksi ditambahkan!', 'success');
+          }
+          closeModal();
+          loadTransactions();
+        } catch (err) {
+          showToast('Error: ' + err.message, 'error');
+        }
+      });
+
+      // Buttons
+      document.getElementById('add-transaction-btn').addEventListener('click', openModal);
+      document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+      document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+      document.getElementById('transaction-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laporan — Annida2Finance</title>
+  <meta name="description" content="Buat dan export laporan keuangan bulanan dalam format PDF secara mudah." />
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">💹</div>
+        <span class="sidebar-title">Annida2Finance</span>
+      </div>
+      <div class="sidebar-nav">
+        <span class="nav-section-label">Menu Utama</span>
+        <a href="../index.html" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="./transactions.html" class="nav-item"><span class="nav-icon">💸</span> Transaksi</a>
+        <a href="./budget.html" class="nav-item"><span class="nav-icon">💰</span> Budget</a>
+        <a href="./reports.html" class="nav-item active"><span class="nav-icon">📄</span> Laporan</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="nav-user-name">Memuat...</div>
+            <div class="user-email" id="nav-user-email">—</div>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="logout-btn">🚪 Keluar</button>
+      </div>
+    </nav>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="flex items-center gap-md">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <div class="topbar-left">
+            <div class="topbar-greeting">Lihat &amp; Export</div>
+            <div class="topbar-title">Laporan Keuangan</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="theme-toggle">☀️</button>
+          <button class="btn btn-success btn-sm" id="export-pdf-btn" style="gap:0.4rem;">
+            📄 Export PDF
+          </button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Laporan Keuangan</h1>
+            <p class="page-subtitle">Pilih periode dan export laporan lengkap ke PDF</p>
+          </div>
+        </div>
+
+        <!-- Report Controls -->
+        <div class="reports-controls">
+          <div class="form-group" style="flex:1;min-width:150px;">
+            <label class="form-label">Bulan</label>
+            <input type="month" class="form-input" id="report-month" />
+          </div>
+          <button class="btn btn-primary" id="generate-report-btn" style="align-self:flex-end;">
+            🔄 Tampilkan Laporan
+          </button>
+          <button class="btn btn-success" id="export-pdf-btn-2" style="align-self:flex-end;">
+            📄 Export PDF
+          </button>
+        </div>
+
+        <!-- Summary Grid -->
+        <div class="report-summary-grid stagger">
+          <div class="report-summary-card">
+            <div class="report-summary-value" id="report-income" style="color:var(--income-color);">Rp0</div>
+            <div class="report-summary-label">Total Pemasukan</div>
+          </div>
+          <div class="report-summary-card">
+            <div class="report-summary-value" id="report-expense" style="color:var(--expense-color);">Rp0</div>
+            <div class="report-summary-label">Total Pengeluaran</div>
+          </div>
+          <div class="report-summary-card">
+            <div class="report-summary-value" id="report-balance" style="color:var(--accent-primary);">Rp0</div>
+            <div class="report-summary-label">Saldo Bersih</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="report-chart-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Tren 6 Bulan Terakhir</div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height:220px;">
+              <canvas id="report-bar-chart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Pengeluaran per Kategori</div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height:220px;">
+              <canvas id="report-donut-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transaction List -->
+        <div class="export-section">
+          <div class="export-header">
+            <div class="export-title">Rincian Transaksi</div>
+            <span style="font-size:0.8rem;color:var(--text-muted);" id="report-period-label">—</span>
+          </div>
+          <div id="report-transactions-list">
+            <div class="empty-state" style="padding:2rem;">
+              <div class="empty-state-icon">📊</div>
+              <div class="empty-state-title">Pilih periode dan klik "Tampilkan Laporan"</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, handleLogout, setupThemeToggle, showToast } from '../js/auth.js';
+    import {
+      fetchMonthlySummary, fetchMonthlyTrend, fetchCategoryBreakdown, fetchTransactions
+    } from '../js/transactions.js';
+    import { renderReportBarChart, renderReportDonutChart, setupChartDefaults } from '../js/charts.js';
+    import { renderReportTransactions, exportToPDF } from '../js/reports.js';
+    import { formatCurrency } from '../js/app.js';
+
+    let userId = null;
+    let currentReportData = null;
+
+    async function generateReport() {
+      const monthInput = document.getElementById('report-month').value;
+      if (!monthInput) {
+        showToast('Pilih bulan terlebih dahulu.', 'warning');
+        return;
+      }
+
+      const [year, month] = monthInput.split('-').map(Number);
+      const periodLabel = new Date(year, month - 1).toLocaleDateString('id-ID', {
+        month: 'long', year: 'numeric'
+      });
+
+      document.getElementById('report-period-label').textContent = periodLabel;
+
+      const [summary, trend, breakdown, { data: transactions }] = await Promise.all([
+        fetchMonthlySummary(userId, year, month),
+        fetchMonthlyTrend(userId),
+        fetchCategoryBreakdown(userId, year, month),
+        fetchTransactions(userId, { month: monthInput }, 1, 200),
+      ]);
+
+      // Update summary cards
+      const balance = summary.income - summary.expense;
+      document.getElementById('report-income').textContent = formatCurrency(summary.income);
+      document.getElementById('report-expense').textContent = formatCurrency(summary.expense);
+      document.getElementById('report-balance').textContent = formatCurrency(balance);
+      document.getElementById('report-balance').style.color = balance >= 0 ? 'var(--income-color)' : 'var(--expense-color)';
+
+      // Charts
+      setupChartDefaults();
+      renderReportBarChart('report-bar-chart', trend);
+      renderReportDonutChart('report-donut-chart', breakdown);
+
+      // Transactions list
+      renderReportTransactions(transactions);
+
+      // Store for PDF export
+      currentReportData = {
+        period: periodLabel,
+        userName: userId,
+        income: summary.income,
+        expense: summary.expense,
+        balance,
+        transactions,
+        categoryBreakdown: breakdown,
+      };
+
+      showToast('Laporan berhasil dibuat!', 'success');
+    }
+
+    async function handleExportPDF() {
+      if (!currentReportData) {
+        showToast('Tampilkan laporan terlebih dahulu sebelum export.', 'warning');
+        return;
+      }
+      try {
+        showToast('Membuat PDF...', 'info');
+        await exportToPDF(currentReportData);
+        showToast('PDF berhasil diunduh!', 'success');
+      } catch (err) {
+        showToast('Gagal export PDF: ' + err.message, 'error');
+        console.error(err);
+      }
+    }
+
+    async function init() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
+      const user = await requireAuth();
+      if (!user) return;
+      userId = user.id;
+
+      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      document.getElementById('user-avatar').textContent = initials;
+      document.getElementById('nav-user-name').textContent = fullName;
+      document.getElementById('nav-user-email').textContent = user.email;
+      currentReportData && (currentReportData.userName = fullName);
+
+      // Sidebar
+      document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.toggle('open');
+        document.getElementById('sidebar-overlay')?.classList.toggle('show');
+      });
+      document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sidebar-overlay')?.classList.remove('show');
+      });
+
+      setupThemeToggle('theme-toggle');
+      setupChartDefaults();
+
+      // Default month = current
+      const now = new Date();
+      document.getElementById('report-month').value =
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      // Buttons
+      document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+      document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
+      document.getElementById('export-pdf-btn-2').addEventListener('click', handleExportPDF);
+
+      // Auto-load current month
+      generateReport();
+    }
+
+    init();
+  </script>
+</body>
+</html>

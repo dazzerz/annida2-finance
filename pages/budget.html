@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget — Annida2Finance</title>
+  <meta name="description" content="Atur anggaran bulanan per kategori dan pantau penggunaannya secara real-time." />
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">💹</div>
+        <span class="sidebar-title">Annida2Finance</span>
+      </div>
+      <div class="sidebar-nav">
+        <span class="nav-section-label">Menu Utama</span>
+        <a href="../index.html" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="./transactions.html" class="nav-item"><span class="nav-icon">💸</span> Transaksi</a>
+        <a href="./budget.html" class="nav-item active"><span class="nav-icon">💰</span> Budget</a>
+        <a href="./reports.html" class="nav-item"><span class="nav-icon">📄</span> Laporan</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="nav-user-name">Memuat...</div>
+            <div class="user-email" id="nav-user-email">—</div>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="logout-btn">🚪 Keluar</button>
+      </div>
+    </nav>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="flex items-center gap-md">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <div class="topbar-left">
+            <div class="topbar-greeting">Kelola</div>
+            <div class="topbar-title">Budget Bulanan</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="theme-toggle">☀️</button>
+          <button class="btn btn-primary btn-sm" id="add-budget-btn">＋ Tambah Budget</button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Anggaran Bulanan</h1>
+            <p class="page-subtitle">Atur berapa banyak kamu boleh belanjakan per kategori</p>
+          </div>
+          <!-- Month selector -->
+          <div class="flex items-center gap-md">
+            <input type="month" class="filter-select" id="budget-month" style="color:var(--text-secondary);" />
+          </div>
+        </div>
+
+        <!-- Budget Summary Banner -->
+        <div class="budget-summary" id="budget-banner">
+          <div class="budget-summary-title">Total Budget Bulan Ini</div>
+          <div class="budget-summary-value" id="budget-total-amount">Rp0</div>
+          <div class="budget-summary-sub" id="budget-total-spent">Rp0 telah digunakan</div>
+        </div>
+
+        <!-- Budget Cards Grid -->
+        <div class="budget-grid stagger" id="budget-grid">
+          <div class="empty-state" style="grid-column:1/-1;padding:3rem;">
+            <div class="spinner spinner-lg"></div>
+            <div class="empty-state-title">Memuat budget...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ── ADD/EDIT BUDGET MODAL ── -->
+  <div class="modal-overlay" id="budget-modal" role="dialog" aria-modal="true" aria-labelledby="budget-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="font-size:1.1rem;font-weight:700;" id="budget-modal-title">Tambah Budget</h2>
+        <button class="btn-icon btn-ghost" id="budget-modal-close" aria-label="Tutup">✕</button>
+      </div>
+      <form id="budget-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="budget-category-select">Kategori Pengeluaran</label>
+            <select class="form-select" id="budget-category-select" required>
+              <option value="">-- Pilih Kategori --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="budget-amount">Batas Budget (Rp) *</label>
+            <input type="number" class="form-input" id="budget-amount" placeholder="Contoh: 500000" min="1000" step="1000" required />
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-muted);padding:0.5rem 0;">
+            💡 Jika budget untuk kategori ini sudah ada di bulan yang dipilih, nilai akan diperbarui.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="budget-modal-cancel">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, handleLogout, setupThemeToggle, showToast } from '../js/auth.js';
+    import { fetchCategories } from '../js/transactions.js';
+    import {
+      fetchBudgets, fetchBudgetSpending, upsertBudget, deleteBudget,
+      renderBudgetCards, updateBudgetSummary
+    } from '../js/budget.js';
+    import { formatCurrency } from '../js/app.js';
+
+    let userId = null;
+    let editingBudgetId = null;
+    let currentYear, currentMonth;
+
+    async function loadBudgets() {
+      const budgets = await fetchBudgets(userId, currentYear, currentMonth);
+      const spending = await fetchBudgetSpending(userId, currentYear, currentMonth);
+      renderBudgetCards(budgets, spending);
+      updateBudgetSummary(budgets, spending);
+    }
+
+    window.editBudget = (id, categoryId, amount) => {
+      editingBudgetId = id;
+      document.getElementById('budget-modal-title').textContent = 'Edit Budget';
+      document.getElementById('budget-category-select').value = categoryId;
+      document.getElementById('budget-amount').value = amount;
+      document.getElementById('budget-modal').classList.add('active');
+    };
+
+    window.confirmDeleteBudget = async (id) => {
+      if (!confirm('Hapus budget ini?')) return;
+      try {
+        await deleteBudget(id);
+        showToast('Budget dihapus.', 'success');
+        loadBudgets();
+      } catch (e) {
+        showToast('Gagal menghapus: ' + e.message, 'error');
+      }
+    };
+
+    function openBudgetModal() {
+      editingBudgetId = null;
+      document.getElementById('budget-modal-title').textContent = 'Tambah Budget';
+      document.getElementById('budget-form').reset();
+      document.getElementById('budget-modal').classList.add('active');
+    }
+
+    function closeBudgetModal() {
+      document.getElementById('budget-modal').classList.remove('active');
+    }
+
+    async function init() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
+      const user = await requireAuth();
+      if (!user) return;
+      userId = user.id;
+
+      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      document.getElementById('user-avatar').textContent = initials;
+      document.getElementById('nav-user-name').textContent = fullName;
+      document.getElementById('nav-user-email').textContent = user.email;
+
+      // Sidebar
+      document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.toggle('open');
+        document.getElementById('sidebar-overlay')?.classList.toggle('show');
+      });
+      document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sidebar-overlay')?.classList.remove('show');
+      });
+
+      setupThemeToggle('theme-toggle');
+
+      // Month
+      const now = new Date();
+      currentYear = now.getFullYear();
+      currentMonth = now.getMonth() + 1;
+      const monthInput = document.getElementById('budget-month');
+      monthInput.value = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+
+      monthInput.addEventListener('change', (e) => {
+        const [y, m] = e.target.value.split('-');
+        currentYear = parseInt(y);
+        currentMonth = parseInt(m);
+        loadBudgets();
+      });
+
+      // Load categories (expense only)
+      const categories = await fetchCategories(userId);
+      const expenseCategories = categories.filter(c => c.type === 'expense');
+      const catSelect = document.getElementById('budget-category-select');
+      catSelect.innerHTML = '<option value="">-- Pilih Kategori --</option>' +
+        expenseCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+
+      // Load budgets
+      loadBudgets();
+
+      // Budget form submit
+      document.getElementById('budget-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const categoryId = document.getElementById('budget-category-select').value;
+        const amount = parseFloat(document.getElementById('budget-amount').value);
+        if (!categoryId || !amount) {
+          showToast('Lengkapi semua kolom.', 'warning');
+          return;
+        }
+        try {
+          await upsertBudget(userId, categoryId, amount, currentMonth, currentYear);
+          showToast('Budget berhasil disimpan!', 'success');
+          closeBudgetModal();
+          loadBudgets();
+        } catch (err) {
+          showToast('Error: ' + err.message, 'error');
+        }
+      });
+
+      document.getElementById('add-budget-btn').addEventListener('click', openBudgetModal);
+      document.getElementById('budget-modal-close').addEventListener('click', closeBudgetModal);
+      document.getElementById('budget-modal-cancel').addEventListener('click', closeBudgetModal);
+      document.getElementById('budget-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeBudgetModal();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
