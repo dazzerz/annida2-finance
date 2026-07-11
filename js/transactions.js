@@ -139,7 +139,7 @@ export function renderTransactionsTable(transactions) {
     const isIncome = t.type === 'income';
     return `<tr>
       <td><span style="font-size:1.2rem">${cat?.icon || '💰'}</span></td>
-      <td><div style="font-weight:600;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.description || '-'}">${t.description || '-'}</div></td>
+      <td><div style="font-weight:600;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;padding-right:1rem;" title="${t.description || '-'}">${t.description || '-'}</div></td>
       <td>${formatDate(t.date)}</td>
       <td><span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">${cat?.name || 'Lainnya'}</span></td>
       <td><span class="badge ${isIncome ? 'badge-income' : 'badge-expense'}">${isIncome ? '↑ Pemasukan' : '↓ Pengeluaran'}</span></td>
