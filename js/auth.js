@@ -147,6 +147,10 @@ export function initAuthPage() {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
+  // Quick switch links
+  document.getElementById('goto-register')?.addEventListener('click', e => { e.preventDefault(); switchTab('register'); });
+  document.getElementById('goto-login')?.addEventListener('click', e => { e.preventDefault(); switchTab('login'); });
+
   // Forms
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
