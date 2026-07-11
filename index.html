@@ -77,12 +77,15 @@
       <!-- Page Content -->
       <main class="page-content">
 
-        <!-- Period label -->
-        <div style="margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;">
-          <h1 style="font-size:1.1rem;font-weight:700;color:var(--text-secondary);">
-            📅 <span id="period-label">Memuat...</span>
-          </h1>
-          <a href="./pages/transactions.html" class="btn btn-ghost btn-sm">Lihat Semua Transaksi →</a>
+        <!-- Period label & Filter -->
+        <div style="margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:1.5rem;">📅</span>
+            <select id="dashboard-month" class="form-select" style="font-size:1rem;font-weight:600;min-width:200px;">
+              <option value="">Semua Bulan (All Time)</option>
+            </select>
+          </div>
+          <a href="./pages/transactions.html" class="btn btn-ghost btn-sm" id="btn-lihat-semua">Lihat Semua Transaksi →</a>
         </div>
 
         <!-- Stats Grid -->

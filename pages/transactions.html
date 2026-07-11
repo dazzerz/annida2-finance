@@ -380,18 +380,11 @@
         document.getElementById('user-avatar').textContent = initials;
         document.getElementById('nav-user-name').textContent = fullName;
         document.getElementById('nav-user-email').textContent = user.email;
+        document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
-        document.getElementById('user-avatar').textContent = 'G';
-        document.getElementById('nav-user-name').textContent = 'Guest';
-        document.getElementById('nav-user-email').textContent = 'Read-Only Access';
-        // Sembunyikan tombol aksi untuk guest
-        const addBtn = document.querySelector('.btn.btn-primary');
-        if (addBtn) addBtn.style.display = 'none';
-        const importBtn = document.getElementById('import-excel-btn');
-        if (importBtn) importBtn.style.display = 'none';
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
-        if (logoutBtn) logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
+        // Guests are not allowed to access Transaksi page
+        window.location.href = '../index.html';
+        return;
       }
 
       // Sidebar

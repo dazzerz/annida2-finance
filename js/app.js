@@ -60,6 +60,12 @@ function updateGreeting(user) {
       logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
       logoutBtn.addEventListener('click', () => window.location.href = './login.html');
     }
+    
+    // Hide Transaksi and Budget in sidebar for guests
+    const navTransactions = document.getElementById('nav-transactions');
+    if (navTransactions) navTransactions.style.display = 'none';
+    const navBudget = document.getElementById('nav-budget');
+    if (navBudget) navBudget.style.display = 'none';
   }
 }
 
@@ -80,7 +86,12 @@ function initSidebar(user) {
 
 // ── Load dashboard data ───────────────────────────
 async function loadDashboard(user) {
-  const { month, year } = getMonthYear();
+  const monthFilter = document.getElementById('dashboard-month')?.value;
+  let year = null, month = null;
+  if (monthFilter) {
+    [year, month] = monthFilter.split('-').map(Number);
+  }
+
   const userId = user ? user.id : null;
 
   const [, summary, trend, catData, recent, budgets, spending] = await Promise.all([
@@ -97,10 +108,6 @@ async function loadDashboard(user) {
   animateCounter(document.getElementById('stat-income'), summary.income);
   animateCounter(document.getElementById('stat-expense'), summary.expense);
   animateCounter(document.getElementById('stat-balance'), summary.income - summary.expense);
-
-  // Period label
-  const el = document.getElementById('period-label');
-  if (el) el.textContent = new Date(year, month - 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
 
   // Charts
   setupChartDefaults();
@@ -149,6 +156,32 @@ async function main() {
   updateGreeting(user);
   initSidebar(user);
   setupThemeToggle('theme-toggle');
+
+  // Populate Month Filter
+  const monthSelect = document.getElementById('dashboard-month');
+  if (monthSelect) {
+    const now = new Date();
+    let currentY = now.getFullYear();
+    let currentM = now.getMonth() + 1;
+    // Generate last 12 months
+    for (let i = 0; i < 12; i++) {
+      let m = currentM - i;
+      let y = currentY;
+      if (m <= 0) {
+        m += 12;
+        y -= 1;
+      }
+      const val = `${y}-${String(m).padStart(2, '0')}`;
+      const label = new Date(y, m - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      monthSelect.appendChild(opt);
+    }
+    monthSelect.value = ''; // Default to All Time
+
+    monthSelect.addEventListener('change', () => loadDashboard(user));
+  }
 
   await loadDashboard(user);
 

@@ -5,6 +5,7 @@ import supabaseClient from './supabase.js';
 import { formatCurrency } from './utils.js';
 
 export async function fetchBudgets(userId, year, month) {
+  if (!year || !month) return [];
   const { data, error } = await supabaseClient
     .from('budgets').select('*, categories(id, name, icon, color)')
     .eq('year', year).eq('month', month);
@@ -13,6 +14,7 @@ export async function fetchBudgets(userId, year, month) {
 }
 
 export async function fetchBudgetSpending(userId, year, month) {
+  if (!year || !month) return {};
   const mm = String(month).padStart(2, '0');
   const start = `${year}-${mm}-01`;
   const end = `${year}-${mm}-${new Date(year, month, 0).getDate()}`;

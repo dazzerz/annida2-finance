@@ -170,16 +170,9 @@
         document.getElementById('nav-user-email').textContent = user.email;
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
-        document.getElementById('user-avatar').textContent = 'G';
-        document.getElementById('nav-user-name').textContent = 'Guest';
-        document.getElementById('nav-user-email').textContent = 'Read-Only Access';
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-          logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
-          logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
-        }
-        const addBtn = document.getElementById('add-budget-btn');
-        if (addBtn) addBtn.style.display = 'none';
+        // Guests are not allowed to access Budget page
+        window.location.href = '../index.html';
+        return;
       }
 
       // Sidebar
