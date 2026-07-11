@@ -68,9 +68,6 @@
         <div class="topbar-right">
           <div style="font-size:0.8rem;color:var(--text-muted);" id="current-date"></div>
           <button class="theme-toggle" id="theme-toggle" aria-label="Ganti tema">☀️</button>
-          <button class="btn btn-primary btn-sm" id="add-transaction-btn" style="gap:0.4rem;">
-            ＋ Transaksi
-          </button>
         </div>
       </header>
 
@@ -225,7 +222,7 @@
           <!-- Amount -->
           <div class="form-group">
             <label class="form-label" for="modal-amount">Jumlah (Rp) <span style="color:var(--expense-color)">*</span></label>
-            <input type="number" class="form-input" id="modal-amount" placeholder="0" min="1" step="1000" required />
+            <input type="number" class="form-input" id="modal-amount" placeholder="0" min="0" step="any" required />
           </div>
 
           <!-- Date -->
