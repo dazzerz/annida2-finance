@@ -119,14 +119,13 @@
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
   <script type="module">
-    import { requireAuth, handleLogout } from '../js/auth.js';
+    import { getOptionalUser, handleLogout } from '../js/auth.js';
     import { showToast, setupThemeToggle, applySavedTheme, formatCurrency } from '../js/utils.js';
     import { fetchCategories } from '../js/transactions.js';
     import {
       fetchBudgets, fetchBudgetSpending, upsertBudget, deleteBudget,
       renderBudgetCards, updateBudgetSummary
     } from '../js/budget.js';
-    import { formatCurrency } from '../js/app.js';
 
     let userId = null;
     let editingBudgetId = null;
@@ -135,7 +134,7 @@
     async function loadBudgets() {
       const budgets = await fetchBudgets(userId, currentYear, currentMonth);
       const spending = await fetchBudgetSpending(userId, currentYear, currentMonth);
-      renderBudgetCards(budgets, spending);
+      renderBudgetCards(budgets, spending, !!userId);
       updateBudgetSummary(budgets, spending);
     }
 
@@ -154,36 +153,36 @@
         showToast('Budget dihapus.', 'success');
         loadBudgets();
       } catch (e) {
-        showToast('Gagal menghapus: ' + e.message, 'error');
+        showToast('Gagal menghapus budget.', 'error');
       }
     };
-
-    function openBudgetModal() {
-      editingBudgetId = null;
-      document.getElementById('budget-modal-title').textContent = 'Tambah Budget';
-      document.getElementById('budget-form').reset();
-      document.getElementById('budget-modal').classList.add('active');
-    }
-
-    function closeBudgetModal() {
-      document.getElementById('budget-modal').classList.remove('active');
-    }
 
     async function init() {
       applySavedTheme();
 
-      const user = await requireAuth();
-      if (!user) return;
-      userId = user.id;
-
-      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
-      const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-      document.getElementById('user-avatar').textContent = initials;
-      document.getElementById('nav-user-name').textContent = fullName;
-      document.getElementById('nav-user-email').textContent = user.email;
+      const user = await getOptionalUser();
+      if (user) {
+        userId = user.id;
+        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
+        const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        document.getElementById('user-avatar').textContent = initials;
+        document.getElementById('nav-user-name').textContent = fullName;
+        document.getElementById('nav-user-email').textContent = user.email;
+        document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+      } else {
+        document.getElementById('user-avatar').textContent = 'G';
+        document.getElementById('nav-user-name').textContent = 'Guest';
+        document.getElementById('nav-user-email').textContent = 'Read-Only Access';
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
+          logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
+        }
+        const addBtn = document.getElementById('add-budget-btn');
+        if (addBtn) addBtn.style.display = 'none';
+      }
 
       // Sidebar
-      document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
         document.getElementById('sidebar')?.classList.toggle('open');
         document.getElementById('sidebar-overlay')?.classList.toggle('show');
@@ -195,29 +194,41 @@
 
       setupThemeToggle('theme-toggle');
 
-      // Month
+      // Populate Category Dropdown
+      const cats = await fetchCategories(userId);
+      const catSelect = document.getElementById('budget-category-select');
+      const expCats = cats.filter(c => c.type === 'expense');
+      catSelect.innerHTML = '<option value="">-- Pilih Kategori --</option>' +
+        expCats.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+
+      // Month Selector
       const now = new Date();
       currentYear = now.getFullYear();
       currentMonth = now.getMonth() + 1;
-      const monthInput = document.getElementById('budget-month');
-      monthInput.value = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+      const mm = String(currentMonth).padStart(2, '0');
+      document.getElementById('budget-month').value = `${currentYear}-${mm}`;
 
-      monthInput.addEventListener('change', (e) => {
+      document.getElementById('budget-month').addEventListener('change', (e) => {
+        if (!e.target.value) return;
         const [y, m] = e.target.value.split('-');
         currentYear = parseInt(y);
         currentMonth = parseInt(m);
         loadBudgets();
       });
 
-      // Load categories (expense only)
-      const categories = await fetchCategories(userId);
-      const expenseCategories = categories.filter(c => c.type === 'expense');
-      const catSelect = document.getElementById('budget-category-select');
-      catSelect.innerHTML = '<option value="">-- Pilih Kategori --</option>' +
-        expenseCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
-
       // Load budgets
       loadBudgets();
+
+      function openBudgetModal() {
+        editingBudgetId = null;
+        document.getElementById('budget-modal-title').textContent = 'Tambah Budget';
+        document.getElementById('budget-form').reset();
+        document.getElementById('budget-modal').classList.add('active');
+      }
+
+      function closeBudgetModal() {
+        document.getElementById('budget-modal').classList.remove('active');
+      }
 
       // Budget form submit
       document.getElementById('budget-form').addEventListener('submit', async (e) => {
@@ -234,11 +245,13 @@
           closeBudgetModal();
           loadBudgets();
         } catch (err) {
-          showToast('Error: ' + err.message, 'error');
+          showToast('Gagal menyimpan: ' + err.message, 'error');
         }
       });
 
-      document.getElementById('add-budget-btn').addEventListener('click', openBudgetModal);
+      const addBudgetBtn = document.getElementById('add-budget-btn');
+      if (addBudgetBtn) addBudgetBtn.addEventListener('click', openBudgetModal);
+      
       document.getElementById('budget-modal-close').addEventListener('click', closeBudgetModal);
       document.getElementById('budget-modal-cancel').addEventListener('click', closeBudgetModal);
       document.getElementById('budget-modal').addEventListener('click', (e) => {

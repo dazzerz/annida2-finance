@@ -7,7 +7,7 @@ import { formatCurrency } from './utils.js';
 export async function fetchBudgets(userId, year, month) {
   const { data, error } = await supabaseClient
     .from('budgets').select('*, categories(id, name, icon, color)')
-    .eq('user_id', userId).eq('year', year).eq('month', month);
+    .eq('year', year).eq('month', month);
   if (error) return [];
   return data || [];
 }
@@ -18,7 +18,7 @@ export async function fetchBudgetSpending(userId, year, month) {
   const end = `${year}-${mm}-${new Date(year, month, 0).getDate()}`;
   const { data, error } = await supabaseClient
     .from('transactions').select('amount, category_id')
-    .eq('user_id', userId).eq('type', 'expense').gte('date', start).lte('date', end);
+    .eq('type', 'expense').gte('date', start).lte('date', end);
   if (error) return {};
   const spending = {};
   (data || []).forEach(t => {
@@ -42,51 +42,52 @@ export async function deleteBudget(id) {
   if (error) throw error;
 }
 
-export function renderBudgetCards(budgets, spending) {
-  const container = document.getElementById('budget-grid');
-  if (!container) return;
-  if (!budgets.length) {
-    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:3rem"><div class="empty-state-icon">💰</div><div class="empty-state-title">Belum ada budget</div><div class="empty-state-desc">Klik "+ Tambah Budget" untuk mulai mengatur anggaran kamu</div></div>`;
+export function renderBudgetCards(budgets, spending, canEdit = true) {
+  const grid = document.getElementById('budget-grid');
+  if (!grid) return;
+  if (!budgets || !budgets.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:3rem;">
+      <div class="empty-state-icon">🎯</div>
+      <div class="empty-state-title">Belum ada budget bulan ini</div>
+      <div class="empty-state-desc">${canEdit ? 'Klik "+ Tambah Budget" untuk mulai merencanakan keuanganmu.' : 'Belum ada data.'}</div>
+    </div>`;
     return;
   }
-  container.innerHTML = budgets.map(b => {
-    const cat = b.categories;
+
+  grid.innerHTML = budgets.map(b => {
     const spent = spending[b.category_id] || 0;
-    const budget = Number(b.amount);
-    const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-    const remaining = budget - spent;
-    let fillClass = '', remainingClass = 'ok', statusText = '';
-    if (percent >= 100) {
-      fillClass = 'danger'; remainingClass = 'over';
-      statusText = `🚨 Melebihi budget ${formatCurrency(Math.abs(remaining))}`;
-    } else if (percent >= 80) {
-      fillClass = 'warning'; remainingClass = 'warning';
-      statusText = `⚠️ Sisa ${formatCurrency(remaining)}`;
-    } else {
-      statusText = `✅ Sisa ${formatCurrency(remaining)}`;
-    }
-    return `<div class="budget-full-card animate-fade-in">
-      <div class="budget-card-header">
-        <div class="budget-category-info">
-          <div class="budget-emoji">${cat?.icon || '💰'}</div>
-          <div>
-            <div class="budget-category-name">${cat?.name || 'Kategori'}</div>
-            <div class="budget-period">Bulan ini</div>
+    const progress = Math.min((spent / b.amount) * 100, 100);
+    const sisa = b.amount - spent;
+    let colorVar = '--income-color';
+    if (progress > 90) colorVar = '--expense-color';
+    else if (progress > 75) colorVar = '--warning-color';
+
+    const actionHtml = canEdit ? `<div class="budget-card-actions">
+        <button class="table-action-btn edit" onclick="editBudget('${b.id}', '${b.category_id}', ${b.amount})" title="Edit Budget">✏️</button>
+        <button class="table-action-btn delete" onclick="confirmDeleteBudget('${b.id}')" title="Hapus Budget">🗑️</button>
+      </div>` : '';
+
+    return `
+      <div class="budget-card">
+        <div class="budget-card-header">
+          <div class="budget-category">
+            <span class="budget-icon">${b.categories?.icon || '💰'}</span>
+            <span class="budget-name">${b.categories?.name || 'Kategori'}</span>
           </div>
+          ${actionHtml}
         </div>
-        <div class="table-actions">
-          <button class="table-action-btn edit" onclick="editBudget('${b.id}','${b.category_id}',${budget})" title="Edit">✏️</button>
-          <button class="table-action-btn delete" onclick="confirmDeleteBudget('${b.id}')" title="Hapus">🗑️</button>
+        <div class="budget-amounts">
+          <div class="budget-spent" style="color:var(${colorVar})">${formatCurrency(spent)}</div>
+          <div class="budget-total">/ ${formatCurrency(b.amount)}</div>
+        </div>
+        <div class="budget-progress-bar">
+          <div class="budget-progress-fill" style="width:${progress}%;background:var(${colorVar})"></div>
+        </div>
+        <div class="budget-status">
+          ${sisa >= 0 ? `Sisa: ${formatCurrency(sisa)}` : `<span style="color:var(--expense-color)">Overbudget: ${formatCurrency(Math.abs(sisa))}</span>`}
         </div>
       </div>
-      <div class="budget-amounts">
-        <div class="budget-spent">${formatCurrency(spent)}</div>
-        <div class="budget-of">dari ${formatCurrency(budget)}</div>
-        <div class="budget-remaining ${remainingClass}">${statusText}</div>
-      </div>
-      <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${percent}%"></div></div>
-      <div class="budget-percent-label">${Math.round(percent)}%</div>
-    </div>`;
+    `;
   }).join('');
 }
 
