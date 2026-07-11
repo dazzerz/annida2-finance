@@ -280,10 +280,10 @@ export function validateAndMapRows(rows, categories) {
         'expense': {
           'makanan': ['makan', 'minum', 'resto', 'food', 'kopi', 'warteg', 'gofood', 'grabfood'],
           'transport': ['transport', 'bensin', 'parkir', 'gojek', 'grab', 'tol', 'tiket', 'kereta'],
-          'tagihan': ['listrik', 'pln', 'air', 'pdam', 'internet', 'wifi', 'indihome', 'pulsa', 'biaya administrasi', 'adm', 'admin', 'pajak'],
+          'tagihan': ['listrik', 'pln', 'air', 'pdam', 'internet', 'wifi', 'indihome', 'pulsa', 'biaya administrasi', 'adm', 'admin', 'pajak', 'pemindahbukuan'],
           'belanja': ['belanja', 'supermarket', 'indomaret', 'alfamart', 'pasar', 'shopee', 'tokopedia'],
           'kesehatan': ['obat', 'dokter', 'rs', 'klinik', 'apotek', 'bpjs'],
-          'edukasi': ['buku', 'kursus', 'spp', 'sekolah', 'kuliah', 'kitab', 'seragam']
+          'pendidikan': ['buku', 'kursus', 'spp', 'sekolah', 'kuliah', 'kitab', 'seragam', 'lks', 'bendera']
         }
       };
 
