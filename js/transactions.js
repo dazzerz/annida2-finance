@@ -131,7 +131,7 @@ export function renderTransactionsTable(transactions) {
   const tbody = document.getElementById('transactions-tbody');
   if (!tbody) return;
   if (!transactions.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">Belum ada transaksi</div><div class="empty-state-desc">Klik "+ Tambah Transaksi" untuk mulai mencatat</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">Belum ada transaksi</div><div class="empty-state-desc">Klik "+ Tambah Transaksi" untuk mulai mencatat</div></div></td></tr>`;
     return;
   }
   tbody.innerHTML = transactions.map(t => {
@@ -139,8 +139,9 @@ export function renderTransactionsTable(transactions) {
     const isIncome = t.type === 'income';
     return `<tr>
       <td><span style="font-size:1.2rem">${cat?.icon || '💰'}</span></td>
-      <td><div style="font-weight:600;color:var(--text-primary)">${t.description || '-'}</div><div style="font-size:.75rem;color:var(--text-muted)">${cat?.name || 'Lainnya'}</div></td>
+      <td><div style="font-weight:600;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.description || '-'}">${t.description || '-'}</div></td>
       <td>${formatDate(t.date)}</td>
+      <td><span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">${cat?.name || 'Lainnya'}</span></td>
       <td><span class="badge ${isIncome ? 'badge-income' : 'badge-expense'}">${isIncome ? '↑ Pemasukan' : '↓ Pengeluaran'}</span></td>
       <td class="transaction-amount ${t.type}">${isIncome ? '+' : '-'}${formatCurrency(t.amount)}</td>
       <td><div class="table-actions">
