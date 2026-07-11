@@ -208,6 +208,14 @@
           </div>
         </div>
 
+        <!-- Loading State for AI (hidden) -->
+        <div id="import-step-loading" style="display:none;text-align:center;padding:3rem 1rem;">
+          <div class="spinner" style="border: 4px solid rgba(0,0,0,0.1); width: 48px; height: 48px; border-radius: 50%; border-left-color: var(--primary-color); animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+          <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+          <div style="font-weight:600;font-size:1.1rem;color:var(--text-color);">Memproses File & AI...</div>
+          <div style="font-size:0.875rem;color:var(--text-muted);margin-top:0.5rem;">Sedang menebak kategori secara otomatis. Harap tunggu beberapa detik.</div>
+        </div>
+
         <!-- STEP 2: Preview (hidden initially) -->
         <div id="import-step-2" style="display:none;">
           <div class="import-summary" id="import-summary">
@@ -492,20 +500,29 @@
 
       async function handleFileSelected(file) {
         if (!file) return;
-        const allowed = ['.xlsx','.xls','.csv'];
-        const ext = '.' + file.name.split('.').pop().toLowerCase();
-        if (!allowed.includes(ext)) {
-          showToast('Format file tidak didukung. Gunakan .xlsx atau .xls', 'error'); return;
-        }
+        const btn = document.getElementById('import-confirm-btn');
+        btn.style.display = 'none';
+
+        // Show loading screen, hide step 1 and step 2
+        document.getElementById('import-step-1').style.display = 'none';
+        document.getElementById('import-step-2').style.display = 'none';
+        document.getElementById('import-step-3').style.display = 'none';
+        document.getElementById('import-step-loading').style.display = 'block';
+
         try {
-          showToast('Membaca file...', 'info');
           const rawRows = await parseExcelFile(file);
           if (!rawRows.length) {
-            showToast('File kosong atau tidak ada data transaksi yang valid.', 'warning'); return;
+            document.getElementById('import-step-loading').style.display = 'none';
+            document.getElementById('import-step-1').style.display = 'block';
+            showToast('File kosong atau tidak ada data transaksi yang valid.', 'warning'); 
+            return;
           }
           const categories = getAllCategories();
-          showToast('Mengklasifikasikan dengan AI (bisa memakan waktu beberapa detik)...', 'info');
+          
           parsedRows = await validateAndMapRows(rawRows, categories);
+
+          // Hide loading
+          document.getElementById('import-step-loading').style.display = 'none';
 
           // Count
           const total = parsedRows.length;
@@ -543,6 +560,8 @@
           document.getElementById('import-confirm-btn').style.display = importable > 0 ? 'flex' : 'none';
           setImportStep(2);
         } catch(err) {
+          document.getElementById('import-step-loading').style.display = 'none';
+          document.getElementById('import-step-1').style.display = 'block';
           showToast('Gagal baca file: ' + err.message, 'error');
         }
       }
@@ -584,6 +603,8 @@
           showToast(`${toImport.length} transaksi berhasil diimport!`, 'success');
           loadTransactions();
         } catch(err) {
+          console.error("Insert error:", err);
+          alert("GAGAL MENYIMPAN KE DATABASE:\\n\\n" + (err.message || JSON.stringify(err)));
           showToast('Gagal import: ' + err.message, 'error');
           btn.disabled = false;
           btn.innerHTML = `✅ Import <span id="import-count">${toImport.length}</span> Transaksi`;
