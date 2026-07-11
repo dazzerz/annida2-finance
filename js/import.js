@@ -315,15 +315,17 @@ export async function validateAndMapRows(rows, categories) {
       const catString = catList.join(',');
       
       try {
-        const response = await fetch('https://dazzerz-annida2finance.hf.space/api/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: [descString, catString] })
-        });
+        // Gunakan Gradio Client untuk Gradio v4+
+        const { client } = await import('https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js');
+        const app = await client("dazzerz/Annida2Finance");
         
-        if (response.ok) {
-          const json = await response.json();
-          const predictedLabels = (json.data[0] || '').split('|||');
+        const result = await app.predict("/predict", [
+          descString,
+          catString
+        ]);
+        
+        if (result && result.data) {
+          const predictedLabels = (result.data[0] || '').split('|||');
           
           unmatchedBatch.forEach((r, index) => {
             const label = predictedLabels[index] ? predictedLabels[index].trim() : '';
