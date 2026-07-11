@@ -251,6 +251,12 @@
           logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
         }
         currentReportData && (currentReportData.userName = 'Guest');
+        
+        // Hide Transaksi and Budget in sidebar for guests
+        const navTransactions = document.getElementById('nav-transactions');
+        if (navTransactions) navTransactions.style.display = 'none';
+        const navBudget = document.getElementById('nav-budget');
+        if (navBudget) navBudget.style.display = 'none';
       }
 
       // Sidebar

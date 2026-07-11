@@ -66,6 +66,10 @@ function updateGreeting(user) {
     if (navTransactions) navTransactions.style.display = 'none';
     const navBudget = document.getElementById('nav-budget');
     if (navBudget) navBudget.style.display = 'none';
+    
+    // Hide Quick Actions / Buttons
+    const addTxBtn = document.getElementById('add-transaction-btn');
+    if (addTxBtn) addTxBtn.style.display = 'none';
   }
 }
 
