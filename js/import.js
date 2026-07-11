@@ -315,9 +315,12 @@ export async function validateAndMapRows(rows, categories) {
       const catString = catList.join(',');
       
       try {
-        // Gunakan Gradio Client untuk Gradio v4+
-        const { client } = await import('https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js');
-        const app = await client("dazzerz/Annida2Finance");
+        // Gunakan Gradio Client untuk Gradio v4+ via ESM
+        const { client } = await import('https://cdn.jsdelivr.net/npm/@gradio/client/+esm');
+        
+        // Ambil URL dari pengaturan, jika tidak ada gunakan default
+        const hfSpaceUrl = localStorage.getItem('hf_api_url') || 'dazzerz/Annida2Finance';
+        const app = await client(hfSpaceUrl);
         
         const result = await app.predict("/predict", [
           descString,

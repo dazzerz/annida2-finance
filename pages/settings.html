@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pengaturan — Annida2Finance</title>
+  <meta name="description" content="Atur konfigurasi aplikasi Annida2Finance" />
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .settings-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      max-width: 600px;
+    }
+    .settings-group {
+      margin-bottom: 1.5rem;
+    }
+    .settings-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .settings-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      background: var(--bg-body);
+      color: var(--text-primary);
+      border-radius: var(--radius-md);
+      font-family: monospace;
+    }
+    .settings-hint {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar" aria-label="Navigasi utama">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">💹</div>
+        <span class="sidebar-title">Annida2Finance</span>
+      </div>
+      <div class="sidebar-nav">
+        <span class="nav-section-label">Menu Utama</span>
+        <a href="../index.html" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="./transactions.html" class="nav-item"><span class="nav-icon">💸</span> Transaksi</a>
+        <a href="./budget.html" class="nav-item"><span class="nav-icon">💰</span> Budget</a>
+        <a href="./reports.html" class="nav-item"><span class="nav-icon">📄</span> Laporan</a>
+        <a href="./settings.html" class="nav-item active"><span class="nav-icon">⚙️</span> Pengaturan</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="nav-user-name">Memuat...</div>
+            <div class="user-email" id="nav-user-email">—</div>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="logout-btn">🚪 Keluar</button>
+      </div>
+    </nav>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="flex items-center gap-md">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <div class="topbar-left">
+            <div class="topbar-greeting">Kelola</div>
+            <div class="topbar-title">Pengaturan</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="theme-toggle">☀️</button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <div class="settings-container">
+          <h2>Integrasi AI (Hugging Face)</h2>
+          <p class="text-secondary" style="margin-bottom: 1.5rem;">Atur koneksi ke server AI milikmu untuk auto-klasifikasi impor Excel.</p>
+          
+          <form id="settings-form">
+            <div class="settings-group">
+              <label for="hf-url">Hugging Face Space URL</label>
+              <input type="text" id="hf-url" placeholder="Contoh: dazzerz/Annida2Finance" required />
+              <span class="settings-hint">Masukkan format <code>username/namaspace</code> dari akun Hugging Face kamu.</span>
+            </div>
+            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- SheetJS (not needed for settings, but keeping standard structure) -->
+  <script type="module" src="../js/settings.js"></script>
+</body>
+</html>
