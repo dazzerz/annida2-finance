@@ -352,14 +352,28 @@ ${descList}`;
           const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
           
           if (answer) {
-            try {
-              let cleanAnswer = answer.trim();
-              if (cleanAnswer.startsWith('```json')) cleanAnswer = cleanAnswer.substring(7);
-              else if (cleanAnswer.startsWith('```')) cleanAnswer = cleanAnswer.substring(3);
-              if (cleanAnswer.endsWith('```')) cleanAnswer = cleanAnswer.slice(0, -3);
-              cleanAnswer = cleanAnswer.trim();
+              let parsedArray = [];
+              try {
+                let cleanAnswer = answer.trim();
+                if (cleanAnswer.startsWith('```json')) cleanAnswer = cleanAnswer.substring(7);
+                else if (cleanAnswer.startsWith('```')) cleanAnswer = cleanAnswer.substring(3);
+                if (cleanAnswer.endsWith('```')) cleanAnswer = cleanAnswer.slice(0, -3);
+                cleanAnswer = cleanAnswer.trim();
+                if (!cleanAnswer.endsWith(']')) cleanAnswer += ']'; // Auto-fix missing bracket
+                
+                parsedArray = JSON.parse(cleanAnswer);
+              } catch (parseErr) {
+                console.warn("JSON parse gagal, mencoba regex fallback...", parseErr);
+                const matches = answer.match(/"([^"]+)"/g);
+                if (matches) {
+                  parsedArray = matches.map(m => m.slice(1, -1));
+                } else {
+                  console.error("Gagal parse JSON Gemini:", answer);
+                  alert("Gemini mengembalikan format yang salah, tapi koneksi berhasil. Silakan cek console.");
+                  return;
+                }
+              }
               
-              const parsedArray = JSON.parse(cleanAnswer);
               unmatchedBatch.forEach((r, index) => {
                 const label = parsedArray[index];
                 if (label && label.toLowerCase() !== 'lainnya') {
@@ -371,10 +385,6 @@ ${descList}`;
                   }
                 }
               });
-            } catch (parseErr) {
-              console.error("Gagal parse JSON Gemini:", answer);
-              alert("Gemini mengembalikan format yang salah, tapi koneksi berhasil. Silakan cek console.");
-            }
           }
         } else {
           const errData = await response.json();
