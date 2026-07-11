@@ -138,13 +138,12 @@
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
   <script type="module">
-    import { requireAuth, handleLogout, setupThemeToggle, showToast } from '../js/auth.js';
-    import {
-      fetchMonthlySummary, fetchMonthlyTrend, fetchCategoryBreakdown, fetchTransactions
-    } from '../js/transactions.js';
+    import { requireAuth, handleLogout } from '../js/auth.js';
+    import { showToast, setupThemeToggle, applySavedTheme, formatCurrency } from '../js/utils.js';
+    import { fetchMonthlySummary, fetchMonthlyTrend, fetchCategoryBreakdown, fetchTransactions } from '../js/transactions.js';
     import { renderReportBarChart, renderReportDonutChart, setupChartDefaults } from '../js/charts.js';
     import { renderReportTransactions, exportToPDF } from '../js/reports.js';
-    import { formatCurrency } from '../js/app.js';
+
 
     let userId = null;
     let currentReportData = null;
@@ -215,8 +214,7 @@
     }
 
     async function init() {
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
+      applySavedTheme();
 
       const user = await requireAuth();
       if (!user) return;

@@ -2,29 +2,8 @@
 // ANNIDA2FINANCE - Authentication Module
 // =====================================================
 import supabaseClient from './supabase.js';
+import { showToast, setupThemeToggle, applySavedTheme } from './utils.js';
 
-// ── Toast helper ──────────────────────────────────
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  toast.innerHTML = `
-    <span class="toast-icon">${icons[type]}</span>
-    <span class="toast-message">${message}</span>
-  `;
-  container.appendChild(toast);
-
-  requestAnimationFrame(() => toast.classList.add('show'));
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 400);
-  }, 3500);
-}
-
-// ── Show auth message (form-level error/success) ──
 function showAuthMessage(message, type) {
   const el = document.getElementById('auth-message');
   if (!el) return;
@@ -33,17 +12,11 @@ function showAuthMessage(message, type) {
   setTimeout(() => el.classList.remove('show'), 5000);
 }
 
-// ── Toggle button loading state ───────────────────
 function setLoading(btnId, isLoading) {
   const btn = document.getElementById(btnId);
   if (!btn) return;
-  if (isLoading) {
-    btn.classList.add('loading');
-    btn.disabled = true;
-  } else {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-  }
+  btn.classList.toggle('loading', isLoading);
+  btn.disabled = isLoading;
 }
 
 // ── LOGIN ─────────────────────────────────────────
@@ -51,33 +24,23 @@ async function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-
   if (!email || !password) {
     showAuthMessage('Mohon isi email dan password.', 'error');
     return;
   }
-
   setLoading('login-btn', true);
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
-  });
-
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
-    const messages = {
+    const msgs = {
       'Invalid login credentials': 'Email atau password salah.',
-      'Email not confirmed': 'Silakan verifikasi email kamu terlebih dahulu.',
+      'Email not confirmed': 'Cek email kamu dan klik link verifikasi terlebih dahulu.',
     };
-    showAuthMessage(messages[error.message] || error.message, 'error');
+    showAuthMessage(msgs[error.message] || error.message, 'error');
     setLoading('login-btn', false);
     return;
   }
-
   showAuthMessage('Login berhasil! Mengalihkan...', 'success');
-  setTimeout(() => {
-    window.location.href = './index.html';
-  }, 1000);
+  setTimeout(() => { window.location.href = './index.html'; }, 800);
 }
 
 // ── REGISTER ──────────────────────────────────────
@@ -89,79 +52,54 @@ async function handleRegister(e) {
   const confirmPassword = document.getElementById('register-confirm').value;
 
   if (!name || !email || !password || !confirmPassword) {
-    showAuthMessage('Mohon isi semua kolom.', 'error');
-    return;
+    showAuthMessage('Mohon isi semua kolom.', 'error'); return;
   }
-
   if (password.length < 6) {
-    showAuthMessage('Password minimal 6 karakter.', 'error');
-    return;
+    showAuthMessage('Password minimal 6 karakter.', 'error'); return;
   }
-
   if (password !== confirmPassword) {
-    showAuthMessage('Konfirmasi password tidak cocok.', 'error');
-    return;
+    showAuthMessage('Konfirmasi password tidak cocok.', 'error'); return;
   }
-
   setLoading('register-btn', true);
 
   const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: name },
-    },
+    email, password,
+    options: { data: { full_name: name } },
   });
 
   if (error) {
-    const messages = {
-      'User already registered': 'Email ini sudah terdaftar. Silakan login.',
-    };
-    showAuthMessage(messages[error.message] || error.message, 'error');
-    setLoading('register-btn', false);
-    return;
-  }
-
-  // Check if email confirmation is required
-  if (data.user && data.user.identities && data.user.identities.length === 0) {
-    showAuthMessage('Email ini sudah terdaftar. Silakan login.', 'error');
+    const msgs = { 'User already registered': 'Email ini sudah terdaftar. Silakan login.' };
+    showAuthMessage(msgs[error.message] || error.message, 'error');
     setLoading('register-btn', false);
     return;
   }
 
   showAuthMessage(
-    'Registrasi berhasil! Cek email kamu untuk verifikasi, lalu login.',
+    data.session
+      ? 'Registrasi berhasil! Mengalihkan ke dashboard...'
+      : 'Registrasi berhasil! Cek email kamu untuk verifikasi lalu login.',
     'success'
   );
-
-  // Reset form
-  document.getElementById('register-form').reset();
   setLoading('register-btn', false);
 
-  // Switch to login tab after 3 seconds
-  setTimeout(() => switchTab('login'), 3000);
+  if (data.session) {
+    setTimeout(() => { window.location.href = './index.html'; }, 800);
+  } else {
+    document.getElementById('register-form').reset();
+    setTimeout(() => switchTab('login'), 3000);
+  }
 }
 
 // ── LOGOUT ────────────────────────────────────────
-async function handleLogout() {
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) {
-    console.error('Logout error:', error);
-    return;
-  }
-  window.location.href = '../login.html';
+export async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  const isInPages = window.location.pathname.includes('/pages/');
+  window.location.href = isInPages ? '../login.html' : './login.html';
 }
 
-// ── Get current user ──────────────────────────────
-async function getCurrentUser() {
-  const { data: { user }, error } = await supabaseClient.auth.getUser();
-  if (error || !user) return null;
-  return user;
-}
-
-// ── Auth guard: redirect to login if not logged in ─
-async function requireAuth() {
-  const user = await getCurrentUser();
+// ── AUTH GUARD ────────────────────────────────────
+export async function requireAuth() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
     const isInPages = window.location.pathname.includes('/pages/');
     window.location.href = isInPages ? '../login.html' : './login.html';
@@ -170,73 +108,42 @@ async function requireAuth() {
   return user;
 }
 
-// ── Auth redirect: redirect to dashboard if logged in ─
-async function redirectIfLoggedIn() {
-  const user = await getCurrentUser();
-  if (user) {
-    window.location.href = './index.html';
-  }
-}
-
-// ── Tab Switching ─────────────────────────────────
+// ── TAB SWITCHING ─────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.auth-tab-btn').forEach((btn) => {
+  document.querySelectorAll('.auth-tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
-  document.querySelectorAll('.auth-form-panel').forEach((panel) => {
+  document.querySelectorAll('.auth-form-panel').forEach(panel => {
     panel.classList.toggle('active', panel.id === `${tab}-panel`);
   });
-  // Clear messages on tab switch
   const msgEl = document.getElementById('auth-message');
-  if (msgEl) {
-    msgEl.className = 'auth-message';
-    msgEl.textContent = '';
-  }
+  if (msgEl) { msgEl.className = 'auth-message'; msgEl.textContent = ''; }
 }
 
-// ── Password visibility toggle ────────────────────
+// ── PASSWORD TOGGLE ───────────────────────────────
 function setupPasswordToggles() {
-  document.querySelectorAll('[data-toggle-password]').forEach((btn) => {
+  document.querySelectorAll('[data-toggle-password]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const targetId = btn.dataset.togglePassword;
-      const input = document.getElementById(targetId);
+      const input = document.getElementById(btn.dataset.togglePassword);
       if (!input) return;
-      const isPassword = input.type === 'password';
-      input.type = isPassword ? 'text' : 'password';
-      btn.textContent = isPassword ? '🙈' : '👁️';
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.textContent = isPass ? '🙈' : '👁️';
     });
   });
 }
 
-// ── Theme Toggle ──────────────────────────────────
-function setupThemeToggle(btnId = 'theme-toggle') {
-  const btn = document.getElementById(btnId);
-  if (!btn) return;
-
-  const saved = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  btn.textContent = saved === 'dark' ? '☀️' : '🌙';
-
-  btn.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    btn.textContent = next === 'dark' ? '☀️' : '🌙';
-  });
-}
-
-// ── Initialize Auth Page ──────────────────────────
-function initAuthPage() {
-  // Apply saved theme
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+// ── INIT AUTH PAGE ────────────────────────────────
+export function initAuthPage() {
+  applySavedTheme();
 
   // Redirect if already logged in
-  redirectIfLoggedIn();
+  supabaseClient.auth.getUser().then(({ data: { user } }) => {
+    if (user) window.location.href = './index.html';
+  });
 
   // Tab buttons
-  document.querySelectorAll('.auth-tab-btn').forEach((btn) => {
+  document.querySelectorAll('.auth-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
@@ -246,18 +153,6 @@ function initAuthPage() {
   if (loginForm) loginForm.addEventListener('submit', handleLogin);
   if (registerForm) registerForm.addEventListener('submit', handleRegister);
 
-  // Password toggles
   setupPasswordToggles();
-
-  // Theme toggle
   setupThemeToggle('auth-theme-toggle');
 }
-
-export {
-  initAuthPage,
-  handleLogout,
-  getCurrentUser,
-  requireAuth,
-  setupThemeToggle,
-  showToast,
-};

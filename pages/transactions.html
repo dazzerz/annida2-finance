@@ -163,13 +163,13 @@
 
   <script type="module">
     import supabaseClient from '../js/supabase.js';
-    import { requireAuth, handleLogout, setupThemeToggle, showToast } from '../js/auth.js';
+    import { requireAuth, handleLogout } from '../js/auth.js';
+    import { showToast, setupThemeToggle, applySavedTheme } from '../js/utils.js';
     import {
       fetchCategories, fetchTransactions, addTransaction, updateTransaction,
       deleteTransaction, renderTransactionsTable, renderPagination,
       populateCategoryDropdown
     } from '../js/transactions.js';
-    import { formatCurrency, formatDate } from '../js/app.js';
 
     const PAGE_SIZE = 10;
     let currentPage = 1;
@@ -230,8 +230,7 @@
     }
 
     async function init() {
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
+      applySavedTheme();
 
       const user = await requireAuth();
       if (!user) return;
