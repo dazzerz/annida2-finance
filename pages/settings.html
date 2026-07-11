@@ -88,20 +88,14 @@
 
       <main class="page-content">
         <div class="settings-container">
-          <h2>Integrasi AI (Hugging Face)</h2>
-          <p class="text-secondary" style="margin-bottom: 1.5rem;">Atur koneksi ke server AI milikmu untuk auto-klasifikasi impor Excel.</p>
+          <h2>Integrasi AI (Google Gemini)</h2>
+          <p class="text-secondary" style="margin-bottom: 1.5rem;">Atur koneksi ke server Google Gemini untuk auto-klasifikasi transaksi yang super akurat.</p>
           
           <form id="settings-form">
             <div class="settings-group">
-              <label for="hf-url">Hugging Face Space URL (Sudah Tidak Wajib)</label>
-              <input type="text" id="hf-url" placeholder="Contoh: dazzerz/Annida2Finance" />
-              <span class="settings-hint">URL Space kamu (sekarang AI akan menembak server utama Hugging Face secara langsung).</span>
-            </div>
-            
-            <div class="settings-group">
-              <label for="hf-token">Hugging Face Access Token (Opsional)</label>
-              <input type="password" id="hf-token" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxx" />
-              <span class="settings-hint">Masukkan token dari pengaturan akun Hugging Face kamu agar tidak terkena limit. (Bisa dikosongkan)</span>
+              <label for="gemini-key">Google Gemini API Key (Wajib)</label>
+              <input type="password" id="gemini-key" placeholder="AIzaSy............................." required />
+              <span class="settings-hint">Dapatkan kunci API gratis dari <a href="https://aistudio.google.com/" target="_blank" style="color:var(--text-accent);">Google AI Studio</a>. Kunci ini hanya disimpan di browsermu.</span>
             </div>
             
             <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>

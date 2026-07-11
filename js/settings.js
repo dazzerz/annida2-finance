@@ -34,23 +34,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Load existing setting
-  const hfInput = document.getElementById('hf-url');
-  const hfTokenInput = document.getElementById('hf-token');
+  const geminiInput = document.getElementById('gemini-key');
   
-  const savedUrl = localStorage.getItem('hf_api_url') || '';
-  const savedToken = localStorage.getItem('hf_token') || '';
-  
-  hfInput.value = savedUrl;
-  hfTokenInput.value = savedToken;
+  const savedKey = localStorage.getItem('gemini_api_key') || '';
+  geminiInput.value = savedKey;
 
   // Handle save
   document.getElementById('settings-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const val = hfInput.value.trim();
-    const tokenVal = hfTokenInput.value.trim();
+    const keyVal = geminiInput.value.trim();
     
-    localStorage.setItem('hf_api_url', val);
-    localStorage.setItem('hf_token', tokenVal);
+    localStorage.setItem('gemini_api_key', keyVal);
     showToast('Pengaturan berhasil disimpan!', 'success');
   });
 });

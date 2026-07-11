@@ -312,56 +312,71 @@ export async function validateAndMapRows(rows, categories) {
     async function fetchAI(unmatchedBatch, catList) {
       if (unmatchedBatch.length === 0) return;
       
-      const descriptions = unmatchedBatch.map(r => r.description);
-      const hfToken = localStorage.getItem('hf_token') || '';
+      const apiKey = localStorage.getItem('gemini_api_key') || '';
+      if (!apiKey) {
+        alert("Kunci API Google Gemini belum diisi! Silakan isi di menu Pengaturan.");
+        return;
+      }
       
+      const catNames = catList.join(', ');
+      const descList = unmatchedBatch.map((r, i) => `${i+1}. ${r.description}`).join('\n');
+      
+      const prompt = `Kamu adalah pakar keuangan pribadi cerdas dari Indonesia. Kategorikan daftar transaksi bank mutasi ini berdasarkan deskripsinya.
+Pilih HANYA dari kategori berikut: [${catNames}, Lainnya].
+Pahami konteks lokal: "Bet/Seragam/SPP" = Pendidikan, "Biaya Adm/Admin" = Belanja/Tagihan, "Gopay/Dana/Shopeepay" = Belanja, "Makan/Snack" = Makanan, "Bonus/Bagi Hasil" = Pemasukan/Bonus.
+
+Kembalikan hasil HANYA dalam bentuk array JSON string, di mana urutannya persis sama dengan urutan transaksi. Contoh jawaban valid: ["Pendidikan", "Tagihan", "Lainnya"]
+
+Daftar Transaksi:
+${descList}`;
+
       try {
-        const headers = { "Content-Type": "application/json" };
-        if (hfToken) {
-          headers["Authorization"] = `Bearer ${hfToken}`;
-        }
-        
         const response = await fetch(
-          "https://router.huggingface.co/hf-inference/models/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
-            headers: headers,
             method: "POST",
-            body: JSON.stringify({ 
-              inputs: descriptions, 
-              parameters: { candidate_labels: catList } 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: "application/json"
+              }
             }),
           }
         );
         
         if (response.ok) {
-          const result = await response.json();
-          // result adalah array of object { labels: [...], scores: [...] }
+          const data = await response.json();
+          const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
           
-          unmatchedBatch.forEach((r, index) => {
-            const res = Array.isArray(result) ? result[index] : result;
-            if (res && res.labels && res.labels.length > 0) {
-              const bestLabel = res.labels[0]; // Label dengan skor tertinggi
-              
-              const matchedCategory = categories.find(c => c.name.toLowerCase() === bestLabel.toLowerCase());
-              if (matchedCategory) {
-                results[r.idx].categoryName = matchedCategory.name;
-                results[r.idx].category_id = matchedCategory.id;
-                results[r.idx].categoryIcon = matchedCategory.icon;
-              }
+          if (answer) {
+            try {
+              const parsedArray = JSON.parse(answer);
+              unmatchedBatch.forEach((r, index) => {
+                const label = parsedArray[index];
+                if (label && label.toLowerCase() !== 'lainnya') {
+                  const matchedCategory = categories.find(c => c.name.toLowerCase() === label.toLowerCase());
+                  if (matchedCategory) {
+                    results[r.idx].categoryName = matchedCategory.name;
+                    results[r.idx].category_id = matchedCategory.id;
+                    results[r.idx].categoryIcon = matchedCategory.icon;
+                  }
+                }
+              });
+            } catch (parseErr) {
+              console.error("Gagal parse JSON Gemini:", answer);
+              alert("Gemini mengembalikan format yang salah, tapi koneksi berhasil.");
             }
-          });
+          }
         } else {
           const errData = await response.json();
-          console.error("AI API Error:", errData);
-          if (errData.error && errData.error.includes("loading")) {
-            alert("Model AI sedang dibangunkan (loading). Harap tunggu sekitar 20 detik lalu coba Import lagi!");
-          } else {
-            alert("Gagal koneksi ke AI: " + (errData.error || response.statusText));
-          }
+          console.error("Gemini API Error:", errData);
+          alert("Gagal memanggil Gemini AI: " + (errData.error?.message || response.statusText));
         }
       } catch (err) {
-        console.error("AI Fetch Error:", err);
-        alert("Gagal koneksi ke AI: " + err.message);
+        console.error("Gemini Fetch Error:", err);
+        alert("Gagal koneksi ke Gemini AI: " + err.message);
       }
     }
 
