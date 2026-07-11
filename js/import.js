@@ -322,7 +322,7 @@ export async function validateAndMapRows(rows, categories) {
         }
         
         const response = await fetch(
-          "https://api-inference.huggingface.co/models/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+          "https://router.huggingface.co/hf-inference/models/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
           {
             headers: headers,
             method: "POST",
