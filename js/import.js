@@ -322,7 +322,8 @@ export async function validateAndMapRows(rows, categories) {
         const hfSpaceUrl = localStorage.getItem('hf_api_url') || 'dazzerz/Annida2Finance';
         const app = await client(hfSpaceUrl);
         
-        const result = await app.predict("/predict", [
+        // Menggunakan index fungsi (0) karena nama endpoint default bisa berbeda di versi terbaru
+        const result = await app.predict(0, [
           descString,
           catString
         ]);
