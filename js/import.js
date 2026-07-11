@@ -332,7 +332,7 @@ ${descList}`;
 
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -340,6 +340,7 @@ ${descList}`;
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: {
                 temperature: 0.1,
+                maxOutputTokens: 8192,
                 responseMimeType: "application/json"
               }
             }),
@@ -352,7 +353,13 @@ ${descList}`;
           
           if (answer) {
             try {
-              const parsedArray = JSON.parse(answer);
+              let cleanAnswer = answer.trim();
+              if (cleanAnswer.startsWith('```json')) cleanAnswer = cleanAnswer.substring(7);
+              else if (cleanAnswer.startsWith('```')) cleanAnswer = cleanAnswer.substring(3);
+              if (cleanAnswer.endsWith('```')) cleanAnswer = cleanAnswer.slice(0, -3);
+              cleanAnswer = cleanAnswer.trim();
+              
+              const parsedArray = JSON.parse(cleanAnswer);
               unmatchedBatch.forEach((r, index) => {
                 const label = parsedArray[index];
                 if (label && label.toLowerCase() !== 'lainnya') {
@@ -366,7 +373,7 @@ ${descList}`;
               });
             } catch (parseErr) {
               console.error("Gagal parse JSON Gemini:", answer);
-              alert("Gemini mengembalikan format yang salah, tapi koneksi berhasil.");
+              alert("Gemini mengembalikan format yang salah, tapi koneksi berhasil. Silakan cek console.");
             }
           }
         } else {
