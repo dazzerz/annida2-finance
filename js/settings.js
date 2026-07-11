@@ -35,16 +35,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load existing setting
   const hfInput = document.getElementById('hf-url');
-  const savedUrl = localStorage.getItem('hf_api_url') || 'dazzerz/Annida2Finance';
+  const hfTokenInput = document.getElementById('hf-token');
+  
+  const savedUrl = localStorage.getItem('hf_api_url') || '';
+  const savedToken = localStorage.getItem('hf_token') || '';
+  
   hfInput.value = savedUrl;
+  hfTokenInput.value = savedToken;
 
   // Handle save
   document.getElementById('settings-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const val = hfInput.value.trim();
-    if (val) {
-      localStorage.setItem('hf_api_url', val);
-      showToast('Pengaturan berhasil disimpan!', 'success');
-    }
+    const tokenVal = hfTokenInput.value.trim();
+    
+    localStorage.setItem('hf_api_url', val);
+    localStorage.setItem('hf_token', tokenVal);
+    showToast('Pengaturan berhasil disimpan!', 'success');
   });
 });

@@ -93,10 +93,17 @@
           
           <form id="settings-form">
             <div class="settings-group">
-              <label for="hf-url">Hugging Face Space URL</label>
-              <input type="text" id="hf-url" placeholder="Contoh: dazzerz/Annida2Finance" required />
-              <span class="settings-hint">Masukkan format <code>username/namaspace</code> dari akun Hugging Face kamu.</span>
+              <label for="hf-url">Hugging Face Space URL (Sudah Tidak Wajib)</label>
+              <input type="text" id="hf-url" placeholder="Contoh: dazzerz/Annida2Finance" />
+              <span class="settings-hint">URL Space kamu (sekarang AI akan menembak server utama Hugging Face secara langsung).</span>
             </div>
+            
+            <div class="settings-group">
+              <label for="hf-token">Hugging Face Access Token (Opsional)</label>
+              <input type="password" id="hf-token" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxx" />
+              <span class="settings-hint">Masukkan token dari pengaturan akun Hugging Face kamu agar tidak terkena limit. (Bisa dikosongkan)</span>
+            </div>
+            
             <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
           </form>
         </div>

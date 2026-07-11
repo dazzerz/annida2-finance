@@ -311,46 +311,56 @@ export async function validateAndMapRows(rows, categories) {
 
     async function fetchAI(unmatchedBatch, catList) {
       if (unmatchedBatch.length === 0) return;
-      const descString = unmatchedBatch.map(r => r.description).join('|||');
-      const catString = catList.join(',');
+      
+      const descriptions = unmatchedBatch.map(r => r.description);
+      const hfToken = localStorage.getItem('hf_token') || '';
       
       try {
-        // Gunakan Gradio Client untuk Gradio v4+ via ESM
-        const { client } = await import('https://cdn.jsdelivr.net/npm/@gradio/client/+esm');
+        const headers = { "Content-Type": "application/json" };
+        if (hfToken) {
+          headers["Authorization"] = `Bearer ${hfToken}`;
+        }
         
-        // Ambil URL dari pengaturan, jika tidak ada gunakan default
-        const hfSpaceUrl = localStorage.getItem('hf_api_url') || 'dazzerz/Annida2Finance';
-        const app = await client(hfSpaceUrl);
-        
-        // Menggunakan index fungsi (0) karena nama endpoint default bisa berbeda di versi terbaru
-        const result = await app.predict(0, [
-          descString,
-          catString
-        ]);
-        
-        if (result && result.data) {
-          const predictedLabels = (result.data[0] || '').split('|||');
-          
-          if (!result.data[0]) {
-             alert("AI berhasil dipanggil, tapi mengembalikan teks kosong! Cek kode Python.");
+        const response = await fetch(
+          "https://api-inference.huggingface.co/models/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+          {
+            headers: headers,
+            method: "POST",
+            body: JSON.stringify({ 
+              inputs: descriptions, 
+              parameters: { candidate_labels: catList } 
+            }),
           }
-
+        );
+        
+        if (response.ok) {
+          const result = await response.json();
+          // result adalah array of object { labels: [...], scores: [...] }
+          
           unmatchedBatch.forEach((r, index) => {
-            const label = predictedLabels[index] ? predictedLabels[index].trim() : '';
-            if (label) {
-              const matchedCategory = categories.find(c => c.name.toLowerCase() === label.toLowerCase());
+            const res = Array.isArray(result) ? result[index] : result;
+            if (res && res.labels && res.labels.length > 0) {
+              const bestLabel = res.labels[0]; // Label dengan skor tertinggi
+              
+              const matchedCategory = categories.find(c => c.name.toLowerCase() === bestLabel.toLowerCase());
               if (matchedCategory) {
                 results[r.idx].categoryName = matchedCategory.name;
                 results[r.idx].category_id = matchedCategory.id;
                 results[r.idx].categoryIcon = matchedCategory.icon;
-              } else {
-                alert(`AI menjawab "${label}", tapi tidak ada di database!`);
               }
             }
           });
+        } else {
+          const errData = await response.json();
+          console.error("AI API Error:", errData);
+          if (errData.error && errData.error.includes("loading")) {
+            alert("Model AI sedang dibangunkan (loading). Harap tunggu sekitar 20 detik lalu coba Import lagi!");
+          } else {
+            alert("Gagal koneksi ke AI: " + (errData.error || response.statusText));
+          }
         }
       } catch (err) {
-        console.error("AI Error:", err);
+        console.error("AI Fetch Error:", err);
         alert("Gagal koneksi ke AI: " + err.message);
       }
     }
