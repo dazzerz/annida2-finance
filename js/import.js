@@ -76,22 +76,100 @@ export function parseExcelFile(file) {
         const data = new Uint8Array(e.target.result);
         const wb = XLSX.read(data, { type: 'array', cellDates: true });
 
-        // Ambil sheet pertama (Transaksi)
         const sheetName = wb.SheetNames[0];
         const sheet = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, {
-          header: ['tanggal', 'keterangan', 'tipe', 'kategori', 'jumlah'],
-          range: 1, // skip header row
-          defval: '',
-        });
+        
+        // Baca sebagai array of arrays
+        const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        
+        let headerRowIdx = -1;
+        let templateType = 'standard'; // 'standard' | 'bsi'
+        
+        // Cari baris header
+        for (let i = 0; i < aoa.length; i++) {
+          const rowStr = aoa[i].map(c => String(c).toLowerCase()).join('|');
+          if (rowStr.includes('waktu transaksi') && rowStr.includes('deskripsi')) {
+            headerRowIdx = i;
+            templateType = 'bsi';
+            break;
+          } else if (rowStr.includes('tanggal') && rowStr.includes('keterangan')) {
+            headerRowIdx = i;
+            templateType = 'standard';
+            break;
+          }
+        }
+        
+        if (headerRowIdx === -1) {
+          // Asumsi standard tapi mungkin dari baris 0
+          headerRowIdx = 0;
+        }
 
-        // Filter baris kosong dan baris instruksi
-        const filtered = rows.filter(r => {
-          const tipe = String(r.tipe || '').toLowerCase().trim();
-          return r.jumlah && (tipe === 'pemasukan' || tipe === 'pengeluaran');
-        });
+        const headers = aoa[headerRowIdx].map(c => String(c).trim());
+        const dataRows = aoa.slice(headerRowIdx + 1);
+        const mappedRows = [];
 
-        resolve(filtered);
+        if (templateType === 'bsi') {
+          // Mutasi BSI
+          const wTIdx = headers.findIndex(h => h.toLowerCase() === 'waktu transaksi');
+          const descIdx = headers.findIndex(h => h.toLowerCase() === 'deskripsi');
+          const debetIdx = headers.findIndex(h => h.toLowerCase() === 'debet');
+          const kreditIdx = headers.findIndex(h => h.toLowerCase() === 'kredit');
+
+          dataRows.forEach(row => {
+            if (!row[wTIdx] && !row[descIdx]) return;
+            
+            let tanggal = row[wTIdx];
+            if (typeof tanggal === 'string' && tanggal.includes('-')) {
+              const parts = tanggal.split(' ')[0].split('-');
+              if (parts.length === 3) tanggal = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else if (tanggal instanceof Date) {
+              tanggal = new Date(tanggal.getTime() - (tanggal.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            }
+
+            const debetStr = String(row[debetIdx] || '').replace(/[^0-9.]/g, '');
+            const kreditStr = String(row[kreditIdx] || '').replace(/[^0-9.]/g, '');
+            const debet = parseFloat(debetStr);
+            const kredit = parseFloat(kreditStr);
+
+            let tipe = '';
+            let jumlah = 0;
+            if (debet > 0) { tipe = 'pengeluaran'; jumlah = debet; }
+            else if (kredit > 0) { tipe = 'pemasukan'; jumlah = kredit; }
+
+            if (jumlah > 0) {
+              mappedRows.push({
+                tanggal: tanggal,
+                keterangan: row[descIdx] || '',
+                tipe: tipe,
+                kategori: '', // kosong, biarkan user mapping jika perlu, atau jadi 'Lainnya'
+                jumlah: jumlah
+              });
+            }
+          });
+        } else {
+          // Template standard Annida2Finance
+          const tglIdx = headers.findIndex(h => h.toLowerCase() === 'tanggal') > -1 ? headers.findIndex(h => h.toLowerCase() === 'tanggal') : 0;
+          const ketIdx = headers.findIndex(h => h.toLowerCase() === 'keterangan') > -1 ? headers.findIndex(h => h.toLowerCase() === 'keterangan') : 1;
+          const tipeIdx = headers.findIndex(h => h.toLowerCase() === 'tipe') > -1 ? headers.findIndex(h => h.toLowerCase() === 'tipe') : 2;
+          const katIdx = headers.findIndex(h => h.toLowerCase() === 'kategori') > -1 ? headers.findIndex(h => h.toLowerCase() === 'kategori') : 3;
+          const jmlIdx = headers.findIndex(h => h.toLowerCase() === 'jumlah') > -1 ? headers.findIndex(h => h.toLowerCase() === 'jumlah') : 4;
+
+          dataRows.forEach(row => {
+            const tipe = String(row[tipeIdx] || '').toLowerCase().trim();
+            const jumlah = row[jmlIdx];
+            if (jumlah && (tipe === 'pemasukan' || tipe === 'pengeluaran')) {
+              mappedRows.push({
+                tanggal: row[tglIdx],
+                keterangan: row[ketIdx],
+                tipe: row[tipeIdx],
+                kategori: row[katIdx],
+                jumlah: row[jmlIdx]
+              });
+            }
+          });
+        }
+
+        resolve(mappedRows);
       } catch (err) {
         reject(new Error('Gagal membaca file: ' + err.message));
       }
