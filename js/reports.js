@@ -104,14 +104,32 @@ export async function exportToPDF(reportData) {
   doc.save(`annida2finance-laporan-${period.replace(/\s/g,'-')}.pdf`);
 }
 
-export function renderReportTransactions(transactions) {
+let currentReportTransactions = [];
+let currentReportPage = 1;
+const REPORT_PAGE_SIZE = 10;
+
+window.changeReportPage = (page) => {
+  renderReportTransactions(null, page);
+};
+
+export function renderReportTransactions(transactions, page = 1) {
+  if (transactions) currentReportTransactions = transactions;
+  currentReportPage = page;
+  
   const el = document.getElementById('report-transactions-list');
+  const paginationEl = document.getElementById('report-pagination');
   if (!el) return;
-  if (!transactions?.length) {
+  if (!currentReportTransactions?.length) {
     el.innerHTML = `<div class="empty-state" style="padding:2rem"><div class="empty-state-icon">📭</div><div class="empty-state-title">Tidak ada transaksi</div></div>`;
+    if (paginationEl) paginationEl.innerHTML = '';
     return;
   }
-  el.innerHTML = transactions.map(t => {
+  
+  const totalPages = Math.ceil(currentReportTransactions.length / REPORT_PAGE_SIZE);
+  const start = (currentReportPage - 1) * REPORT_PAGE_SIZE;
+  const sliced = currentReportTransactions.slice(start, start + REPORT_PAGE_SIZE);
+  
+  el.innerHTML = sliced.map(t => {
     const cat = t.categories;
     const isIncome = t.type === 'income';
     return `<div class="transaction-item">
@@ -123,4 +141,20 @@ export function renderReportTransactions(transactions) {
       <div class="transaction-amount ${t.type}">${isIncome?'+':'-'}${formatCurrency(t.amount)}</div>
     </div>`;
   }).join('');
+  
+  if (paginationEl) {
+    if (totalPages <= 1) {
+      paginationEl.innerHTML = '';
+    } else {
+      let buttons = '';
+      if (currentReportPage > 1) {
+        buttons += `<button class="btn btn-ghost btn-sm" onclick="window.changeReportPage(${currentReportPage - 1})" style="padding:0.4rem 0.8rem;border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);cursor:pointer;background:var(--bg-card);">← Prev</button>`;
+      }
+      buttons += `<span style="font-size:0.9rem;display:flex;align-items:center;color:var(--text-muted);">Halaman ${currentReportPage} dari ${totalPages}</span>`;
+      if (currentReportPage < totalPages) {
+        buttons += `<button class="btn btn-ghost btn-sm" onclick="window.changeReportPage(${currentReportPage + 1})" style="padding:0.4rem 0.8rem;border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);cursor:pointer;background:var(--bg-card);">Next →</button>`;
+      }
+      paginationEl.innerHTML = buttons;
+    }
+  }
 }

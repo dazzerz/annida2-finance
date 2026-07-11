@@ -19,7 +19,7 @@ export async function fetchCategories(userId) {
 export function getAllCategories() { return allCategories; }
 
 // ── Fetch transactions ────────────────────────────
-export async function fetchTransactions(userId, filters = {}, page = 1) {
+export async function fetchTransactions(userId, filters = {}, page = 1, pageSize = PAGE_SIZE) {
   let query = supabaseClient
     .from('transactions')
     .select('*, categories(id, name, icon, color, type)', { count: 'exact' })
@@ -37,8 +37,8 @@ export async function fetchTransactions(userId, filters = {}, page = 1) {
   }
   if (filters.search) query = query.ilike('description', `%${filters.search}%`);
 
-  const from = (page - 1) * PAGE_SIZE;
-  query = query.range(from, from + PAGE_SIZE - 1);
+  const from = (page - 1) * pageSize;
+  query = query.range(from, from + pageSize - 1);
 
   const { data, error, count } = await query;
   if (error) { console.error('fetchTransactions error:', error); return { data: [], count: 0 }; }
