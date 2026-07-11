@@ -258,19 +258,53 @@ export function validateAndMapRows(rows, categories) {
     const amount = parseFloat(jumlahRaw);
     if (!amount || amount <= 0) errors.push('Jumlah harus lebih dari 0');
 
+    // Keterangan
+    const description = String(row.keterangan || '').trim();
+
     // Kategori (opsional - cari match)
     const katNama = String(row.kategori || '').trim().toLowerCase();
-    const matchedCat = categories.find(c =>
+    let matchedCat = categories.find(c =>
       c.name.toLowerCase() === katNama &&
       ((type === 'income' && c.type === 'income') || (type === 'expense' && c.type === 'expense'))
     );
+
+    // Auto-categorize jika kategori kosong (biasanya dari file bank mutasi)
+    if (!katNama && !matchedCat && description) {
+      const descLower = description.toLowerCase();
+      const keywords = {
+        'income': {
+          'gaji': ['gaji', 'salary', 'upah', 'honor', 'payroll'],
+          'bonus': ['bonus', 'thr'],
+          'hadiah': ['hadiah', 'gift', 'reward']
+        },
+        'expense': {
+          'makanan': ['makan', 'minum', 'resto', 'food', 'kopi', 'warteg', 'gofood', 'grabfood'],
+          'transport': ['transport', 'bensin', 'parkir', 'gojek', 'grab', 'tol', 'tiket', 'kereta'],
+          'tagihan': ['listrik', 'pln', 'air', 'pdam', 'internet', 'wifi', 'indihome', 'pulsa', 'biaya administrasi', 'adm', 'admin', 'pajak'],
+          'belanja': ['belanja', 'supermarket', 'indomaret', 'alfamart', 'pasar', 'shopee', 'tokopedia'],
+          'kesehatan': ['obat', 'dokter', 'rs', 'klinik', 'apotek', 'bpjs'],
+          'edukasi': ['buku', 'kursus', 'spp', 'sekolah', 'kuliah', 'kitab', 'seragam']
+        }
+      };
+
+      const typeKeywords = keywords[type] || {};
+      let autoMatchedName = null;
+      for (const [catName, words] of Object.entries(typeKeywords)) {
+        if (words.some(w => descLower.includes(w))) {
+          autoMatchedName = catName;
+          break;
+        }
+      }
+
+      if (autoMatchedName) {
+        matchedCat = categories.find(c => c.type === type && c.name.toLowerCase().includes(autoMatchedName));
+      }
+    }
+
     const categoryId = matchedCat?.id || null;
     if (katNama && !matchedCat) {
       errors.push(`Kategori "${row.kategori}" tidak ditemukan (akan diisi "Lainnya")`);
     }
-
-    // Keterangan
-    const description = String(row.keterangan || '').trim();
 
     results.push({
       rowNum,
