@@ -96,6 +96,7 @@ function setupEventListeners() {
 
   document.getElementById('btn-save-rab')?.addEventListener('click', saveRAB);
   document.getElementById('btn-sync-budget')?.addEventListener('click', syncToBudget);
+  document.getElementById('btn-export-excel')?.addEventListener('click', exportToExcel);
 }
 
 function updateStateFromUI() {
@@ -383,7 +384,7 @@ async function syncToBudget() {
           .eq('year', period.year).eq('month', period.month).maybeSingle();
 
         if (existingBudget) {
-          await supabaseClient.from('budgets').update({ amount_limit: item.amount })
+          await supabaseClient.from('budgets').update({ amount: item.amount })
             .eq('id', existingBudget.id);
         } else {
           await supabaseClient.from('budgets').insert([{
@@ -391,7 +392,7 @@ async function syncToBudget() {
             category_id: catId,
             year: period.year,
             month: period.month,
-            amount_limit: item.amount
+            amount: item.amount
           }]);
         }
       }
@@ -418,4 +419,119 @@ function showToast(message, type = 'info') {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+function exportToExcel() {
+  updateStateFromUI();
+  calculateRAB(); 
+
+  let csvContent = "data:text/csv;charset=utf-8,";
+  
+  const addRow = (row) => {
+    // Escape commas inside values by quoting them
+    const escapedRow = row.map(item => {
+      const str = String(item);
+      return str.includes(',') ? `"${str}"` : str;
+    });
+    csvContent += escapedRow.join(",") + "\n";
+  };
+
+  addRow(["RAB KELAS ANNIDA 2"]);
+  addRow([]);
+  
+  addRow(["A. Data Siswa"]);
+  addRow(["Keterangan", "Jumlah"]);
+  addRow(["Siswa Laki-laki", state.siswaL]);
+  addRow(["Siswa Perempuan", state.siswaP]);
+  addRow(["Total Siswa", state.siswaL + state.siswaP]);
+  addRow([]);
+
+  addRow(["B. Pemasukan Awal Pendaftaran"]);
+  addRow(["Keterangan", "Qty", "Nilai (Rp)", "Total (Rp)"]);
+  let tPend = 0;
+  ['full', 'sebagian', 'khusus', 'gratis'].forEach(k => {
+    const qty = state.pendaftaran[k].qty;
+    const val = state.pendaftaran[k].val;
+    const tot = qty * val;
+    tPend += tot;
+    let label = k === 'full' ? 'Siswa Full Bayar' : k === 'sebagian' ? 'Siswa Bayar Sebagian' : k === 'khusus' ? 'Siswa Bayar Khusus' : 'Siswa Gratis';
+    addRow([label, qty, val, tot]);
+  });
+  addRow(["", "", "Total Pemasukan Awal", tPend]);
+  addRow([]);
+
+  addRow(["C. Modal Pengadaan Siswa"]);
+  addRow(["Uraian", "Biaya/Siswa (Rp)"]);
+  const uraian = ["Pendaftaran", "Kitab", "Buku LKS", "Foto & Kartu", "Rapor", "Seragam Batik", "Seragam Olahraga", "Bet & Lokasi", "Baju Muslim", "Dasi", "Gesper"];
+  let tAnak = 0;
+  uraian.forEach((u, i) => {
+    addRow([u, state.modal[i]]);
+    tAnak += state.modal[i];
+  });
+  addRow(["Total Biaya per Anak", tAnak]);
+  addRow([]);
+
+  addRow(["D. Total Modal Awal"]);
+  const mL = state.siswaL * tAnak;
+  const mP = state.siswaP * tAnak;
+  const tM = mL + mP;
+  const dD = tM * 0.3;
+  const tAll = tM + dD;
+  addRow(["Modal Laki-laki", mL]);
+  addRow(["Modal Perempuan", mP]);
+  addRow(["Total Modal Anak", tM]);
+  addRow(["Dana Darurat (30%)", dD]);
+  addRow(["Total Modal + Darurat", tAll]);
+  addRow([]);
+
+  addRow(["E. Operasional Tahunan"]);
+  addRow(["Operasional Bulanan"]);
+  addRow(["Uraian", "Biaya/Bulan (Rp)"]);
+  const opsB = ["Listrik", "Air", "Kebersihan", "ATK"];
+  let tOpsB = 0;
+  opsB.forEach((u, i) => { addRow([u, state.opsBulan[i]]); tOpsB += state.opsBulan[i]; });
+  addRow(["Total / Bulan", tOpsB]);
+  const tOps12 = tOpsB * 12;
+  addRow(["Total 12 Bulan", tOps12]);
+  addRow([]);
+  
+  addRow(["Pembelian Isi Kelas (Tahunan)"]);
+  addRow(["Uraian", "Biaya (Rp)"]);
+  const opsT = ["Bingkai Presiden", "Sapu Set Pengki", "Pel + Ember"];
+  let tOpsT = 0;
+  opsT.forEach((u, i) => { addRow([u, state.opsTahun[i]]); tOpsT += state.opsTahun[i]; });
+  addRow(["Total Isi Kelas (Thn)", tOpsT]);
+  const tOpsAll = tOps12 + tOpsT;
+  addRow(["Total Pengeluaran Tahunan", tOpsAll]);
+  addRow([]);
+
+  addRow(["F. Pemasukan SPP Tahunan"]);
+  addRow(["Jumlah Anak Bayar SPP", state.spp.anak]);
+  addRow(["SPP / Bulan / Anak (Rp)", state.spp.nominal]);
+  const tSppB = state.spp.anak * state.spp.nominal;
+  addRow(["Total SPP / Bulan", tSppB]);
+  const tSppT = tSppB * 12;
+  addRow(["Total SPP Tahunan", tSppT]);
+  addRow([]);
+
+  addRow(["G. Ringkasan RAB"]);
+  addRow(["Pemasukan Pendaftaran", tPend]);
+  addRow(["Pemasukan SPP (1 Thn)", tSppT]);
+  const tIn = tPend + tSppT;
+  addRow(["TOTAL PEMASUKAN", tIn]);
+  addRow([]);
+  addRow(["Modal Awal + Darurat", tAll]);
+  addRow(["Operasional Tahunan", tOpsAll]);
+  const tOut = tAll + tOpsAll;
+  addRow(["TOTAL PENGELUARAN", tOut]);
+  addRow([]);
+  addRow(["SISA SALDO / SURPLUS", tIn - tOut]);
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "RAB_Kelas_Annida2.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
