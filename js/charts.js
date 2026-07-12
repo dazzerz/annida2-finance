@@ -103,7 +103,11 @@ export function renderDonutChart(canvasId, categoryData) {
 
   const labels = categoryData.map((c) => c.name);
   const values = categoryData.map((c) => c.total);
-  const colors = categoryData.map((c) => c.color);
+  
+  // Override DB colors with robust theme colors
+  const themeColors = ['#7ced50', '#22c55e', '#14b8a6', '#0f766e', '#f59e0b', '#334155', '#94a3b8'];
+  const colors = categoryData.map((c, i) => themeColors[i % themeColors.length]);
+  categoryData.forEach((c, i) => { c.color = themeColors[i % themeColors.length]; });
 
   donutChartInstance = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
@@ -213,7 +217,11 @@ export function renderReportDonutChart(canvasId, categoryData) {
 
   const labels = categoryData.map((c) => c.name);
   const values = categoryData.map((c) => c.total);
-  const colors = categoryData.map((c) => c.color);
+  
+  // Override DB colors with robust theme colors
+  const themeColors = ['#7ced50', '#22c55e', '#14b8a6', '#0f766e', '#f59e0b', '#334155', '#94a3b8'];
+  const colors = categoryData.map((c, i) => themeColors[i % themeColors.length]);
+  categoryData.forEach((c, i) => { c.color = themeColors[i % themeColors.length]; });
 
   reportLineInstance = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',

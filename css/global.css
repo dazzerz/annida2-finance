@@ -109,7 +109,7 @@
   --bg-card-hover: #f8fafc;
   --bg-elevated: #ffffff;
   --bg-input: #f1f5f9;
-  --bg-sidebar: #0f172a; /* Dark sidebar in light mode often looks good, but let's make it dark green/black like logo */
+  --bg-sidebar: #ffffff; /* Bright white sidebar in light mode */
 
   --border-color: rgba(0, 0, 0, 0.08);
   --border-focus: rgba(124, 237, 80, 0.4);
@@ -126,7 +126,7 @@
   --accent-secondary-glow: rgba(0, 0, 0, 0.15);
   
   --gradient-primary: linear-gradient(135deg, #60cc38, #4ade80);
-  --gradient-sidebar: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   --gradient-card: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%);
   
   --glass-bg: rgba(255, 255, 255, 0.7);
