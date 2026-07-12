@@ -173,7 +173,8 @@ function calculateRAB() {
   ['full', 'sebagian', 'khusus', 'gratis'].forEach(key => {
     const itemTotal = state.pendaftaran[key].qty * state.pendaftaran[key].val;
     totalPendaftaran += itemTotal;
-    document.getElementById(`pendaftaran-${key}`).textContent = formatCurrency(itemTotal);
+    const el = document.getElementById(`pendaftaran-${key}`);
+    if (el) el.textContent = formatCurrency(itemTotal);
   });
   document.getElementById('total-pendaftaran').textContent = formatCurrency(totalPendaftaran);
 
