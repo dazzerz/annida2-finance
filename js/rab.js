@@ -425,113 +425,147 @@ function exportToExcel() {
   updateStateFromUI();
   calculateRAB(); 
 
-  let csvContent = "data:text/csv;charset=utf-8,";
-  
-  const addRow = (row) => {
-    // Escape commas inside values by quoting them
-    const escapedRow = row.map(item => {
-      const str = String(item);
-      return str.includes(',') ? `"${str}"` : str;
-    });
-    csvContent += escapedRow.join(",") + "\n";
-  };
+  const formatNum = (num) => Number(num).toLocaleString('id-ID');
 
-  addRow(["RAB KELAS ANNIDA 2"]);
-  addRow([]);
-  
-  addRow(["A. Data Siswa"]);
-  addRow(["Keterangan", "Jumlah"]);
-  addRow(["Siswa Laki-laki", state.siswaL]);
-  addRow(["Siswa Perempuan", state.siswaP]);
-  addRow(["Total Siswa", state.siswaL + state.siswaP]);
-  addRow([]);
-
-  addRow(["B. Pemasukan Awal Pendaftaran"]);
-  addRow(["Keterangan", "Qty", "Nilai (Rp)", "Total (Rp)"]);
   let tPend = 0;
+  let htmlPend = '';
   ['full', 'sebagian', 'khusus', 'gratis'].forEach(k => {
     const qty = state.pendaftaran[k].qty;
     const val = state.pendaftaran[k].val;
     const tot = qty * val;
     tPend += tot;
     let label = k === 'full' ? 'Siswa Full Bayar' : k === 'sebagian' ? 'Siswa Bayar Sebagian' : k === 'khusus' ? 'Siswa Bayar Khusus' : 'Siswa Gratis';
-    addRow([label, qty, val, tot]);
+    htmlPend += `<tr><td>${label}</td><td class="num">${qty}</td><td class="num">${formatNum(val)}</td><td class="num">${formatNum(tot)}</td></tr>`;
   });
-  addRow(["", "", "Total Pemasukan Awal", tPend]);
-  addRow([]);
 
-  addRow(["C. Modal Pengadaan Siswa"]);
-  addRow(["Uraian", "Biaya/Siswa (Rp)"]);
   const uraian = ["Pendaftaran", "Kitab", "Buku LKS", "Foto & Kartu", "Rapor", "Seragam Batik", "Seragam Olahraga", "Bet & Lokasi", "Baju Muslim", "Dasi", "Gesper"];
   let tAnak = 0;
+  let htmlModal = '';
   uraian.forEach((u, i) => {
-    addRow([u, state.modal[i]]);
+    htmlModal += `<tr><td>${u}</td><td class="num">${formatNum(state.modal[i])}</td><td colspan="2"></td></tr>`;
     tAnak += state.modal[i];
   });
-  addRow(["Total Biaya per Anak", tAnak]);
-  addRow([]);
 
-  addRow(["D. Total Modal Awal"]);
   const mL = state.siswaL * tAnak;
   const mP = state.siswaP * tAnak;
   const tM = mL + mP;
   const dD = tM * 0.3;
   const tAll = tM + dD;
-  addRow(["Modal Laki-laki", mL]);
-  addRow(["Modal Perempuan", mP]);
-  addRow(["Total Modal Anak", tM]);
-  addRow(["Dana Darurat (30%)", dD]);
-  addRow(["Total Modal + Darurat", tAll]);
-  addRow([]);
 
-  addRow(["E. Operasional Tahunan"]);
-  addRow(["Operasional Bulanan"]);
-  addRow(["Uraian", "Biaya/Bulan (Rp)"]);
   const opsB = ["Listrik", "Air", "Kebersihan", "ATK"];
   let tOpsB = 0;
-  opsB.forEach((u, i) => { addRow([u, state.opsBulan[i]]); tOpsB += state.opsBulan[i]; });
-  addRow(["Total / Bulan", tOpsB]);
+  let htmlOpsB = '';
+  opsB.forEach((u, i) => { 
+    htmlOpsB += `<tr><td>${u}</td><td class="num">${formatNum(state.opsBulan[i])}</td><td colspan="2"></td></tr>`;
+    tOpsB += state.opsBulan[i]; 
+  });
   const tOps12 = tOpsB * 12;
-  addRow(["Total 12 Bulan", tOps12]);
-  addRow([]);
-  
-  addRow(["Pembelian Isi Kelas (Tahunan)"]);
-  addRow(["Uraian", "Biaya (Rp)"]);
+
   const opsT = ["Bingkai Presiden", "Sapu Set Pengki", "Pel + Ember"];
   let tOpsT = 0;
-  opsT.forEach((u, i) => { addRow([u, state.opsTahun[i]]); tOpsT += state.opsTahun[i]; });
-  addRow(["Total Isi Kelas (Thn)", tOpsT]);
+  let htmlOpsT = '';
+  opsT.forEach((u, i) => { 
+    htmlOpsT += `<tr><td>${u}</td><td class="num">${formatNum(state.opsTahun[i])}</td><td colspan="2"></td></tr>`;
+    tOpsT += state.opsTahun[i]; 
+  });
   const tOpsAll = tOps12 + tOpsT;
-  addRow(["Total Pengeluaran Tahunan", tOpsAll]);
-  addRow([]);
 
-  addRow(["F. Pemasukan SPP Tahunan"]);
-  addRow(["Jumlah Anak Bayar SPP", state.spp.anak]);
-  addRow(["SPP / Bulan / Anak (Rp)", state.spp.nominal]);
   const tSppB = state.spp.anak * state.spp.nominal;
-  addRow(["Total SPP / Bulan", tSppB]);
   const tSppT = tSppB * 12;
-  addRow(["Total SPP Tahunan", tSppT]);
-  addRow([]);
-
-  addRow(["G. Ringkasan RAB"]);
-  addRow(["Pemasukan Pendaftaran", tPend]);
-  addRow(["Pemasukan SPP (1 Thn)", tSppT]);
   const tIn = tPend + tSppT;
-  addRow(["TOTAL PEMASUKAN", tIn]);
-  addRow([]);
-  addRow(["Modal Awal + Darurat", tAll]);
-  addRow(["Operasional Tahunan", tOpsAll]);
   const tOut = tAll + tOpsAll;
-  addRow(["TOTAL PENGELUARAN", tOut]);
-  addRow([]);
-  addRow(["SISA SALDO / SURPLUS", tIn - tOut]);
 
-  const encodedUri = encodeURI(csvContent);
+  let html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+        th, td { border: 1px solid #000000; padding: 6px; }
+        th { background-color: #d9e1f2; font-weight: bold; text-align: center; }
+        .title { font-size: 18px; font-weight: bold; text-align: center; border: none; }
+        .section { background-color: #c6e0b4; font-weight: bold; }
+        .num { text-align: right; }
+        .total { font-weight: bold; background-color: #fff2cc; }
+        .grand-total { font-weight: bold; background-color: #fce4d6; }
+      </style>
+    </head>
+    <body>
+      <table>
+        <tr><td colspan="4" class="title">RAB KELAS ANNIDA 2</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+        
+        <tr class="section"><td colspan="4">A. Data Siswa</td></tr>
+        <tr><th colspan="2">Keterangan</th><th colspan="2">Jumlah</th></tr>
+        <tr><td colspan="2">Siswa Laki-laki</td><td colspan="2" class="num">${state.siswaL}</td></tr>
+        <tr><td colspan="2">Siswa Perempuan</td><td colspan="2" class="num">${state.siswaP}</td></tr>
+        <tr class="total"><td colspan="2">Total Siswa</td><td colspan="2" class="num">${state.siswaL + state.siswaP}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+
+        <tr class="section"><td colspan="4">B. Pemasukan Awal Pendaftaran</td></tr>
+        <tr><th>Keterangan</th><th>Qty</th><th>Nilai (Rp)</th><th>Total (Rp)</th></tr>
+        ${htmlPend}
+        <tr class="total"><td colspan="3" style="text-align:right;">Total Pemasukan Awal</td><td class="num">${formatNum(tPend)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+
+        <tr class="section"><td colspan="4">C. Modal Pengadaan Siswa</td></tr>
+        <tr><th colspan="2">Uraian</th><th colspan="2">Biaya/Siswa (Rp)</th></tr>
+        ${htmlModal}
+        <tr class="total"><td colspan="2">Total Biaya per Anak</td><td colspan="2" class="num">${formatNum(tAnak)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+
+        <tr class="section"><td colspan="4">D. Total Modal Awal</td></tr>
+        <tr><td colspan="2">Modal Laki-laki</td><td colspan="2" class="num">${formatNum(mL)}</td></tr>
+        <tr><td colspan="2">Modal Perempuan</td><td colspan="2" class="num">${formatNum(mP)}</td></tr>
+        <tr><td colspan="2">Total Modal Anak</td><td colspan="2" class="num">${formatNum(tM)}</td></tr>
+        <tr><td colspan="2">Dana Darurat (30%)</td><td colspan="2" class="num">${formatNum(dD)}</td></tr>
+        <tr class="total"><td colspan="2">Total Modal + Darurat</td><td colspan="2" class="num">${formatNum(tAll)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+
+        <tr class="section"><td colspan="4">E. Operasional Tahunan</td></tr>
+        <tr><td colspan="4" style="font-weight:bold; background:#e2efda;">Operasional Bulanan</td></tr>
+        <tr><th colspan="2">Uraian</th><th colspan="2">Biaya/Bulan (Rp)</th></tr>
+        ${htmlOpsB}
+        <tr class="total"><td colspan="2">Total / Bulan</td><td colspan="2" class="num">${formatNum(tOpsB)}</td></tr>
+        <tr class="total"><td colspan="2">Total 12 Bulan</td><td colspan="2" class="num">${formatNum(tOps12)}</td></tr>
+        
+        <tr><td colspan="4" style="font-weight:bold; background:#e2efda;">Pembelian Isi Kelas (Tahunan)</td></tr>
+        <tr><th colspan="2">Uraian</th><th colspan="2">Biaya (Rp)</th></tr>
+        ${htmlOpsT}
+        <tr class="total"><td colspan="2">Total Isi Kelas (Thn)</td><td colspan="2" class="num">${formatNum(tOpsT)}</td></tr>
+        <tr class="grand-total"><td colspan="2">Total Pengeluaran Tahunan</td><td colspan="2" class="num">${formatNum(tOpsAll)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+
+        <tr class="section"><td colspan="4">F. Pemasukan SPP Tahunan</td></tr>
+        <tr><td colspan="2">Jumlah Anak Bayar SPP</td><td colspan="2" class="num">${state.spp.anak}</td></tr>
+        <tr><td colspan="2">SPP / Bulan / Anak (Rp)</td><td colspan="2" class="num">${formatNum(state.spp.nominal)}</td></tr>
+        <tr><td colspan="2">Total SPP / Bulan</td><td colspan="2" class="num">${formatNum(tSppB)}</td></tr>
+        <tr class="total"><td colspan="2">Total SPP Tahunan</td><td colspan="2" class="num">${formatNum(tSppT)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+
+        <tr class="section"><td colspan="4">G. Ringkasan RAB</td></tr>
+        <tr><td colspan="2">Pemasukan Pendaftaran</td><td colspan="2" class="num">${formatNum(tPend)}</td></tr>
+        <tr><td colspan="2">Pemasukan SPP (1 Thn)</td><td colspan="2" class="num">${formatNum(tSppT)}</td></tr>
+        <tr class="total"><td colspan="2">TOTAL PEMASUKAN</td><td colspan="2" class="num">${formatNum(tIn)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+        <tr><td colspan="2">Modal Awal + Darurat</td><td colspan="2" class="num">${formatNum(tAll)}</td></tr>
+        <tr><td colspan="2">Operasional Tahunan</td><td colspan="2" class="num">${formatNum(tOpsAll)}</td></tr>
+        <tr class="total"><td colspan="2">TOTAL PENGELUARAN</td><td colspan="2" class="num">${formatNum(tOut)}</td></tr>
+        <tr><td colspan="4" style="border:none;"></td></tr>
+        <tr class="grand-total" style="font-size:14px;"><td colspan="2">SISA SALDO / SURPLUS</td><td colspan="2" class="num">${formatNum(tIn - tOut)}</td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Encode safely for UTF-8
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "RAB_Kelas_Annida2.csv");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "RAB_Kelas_Annida2.xls");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
