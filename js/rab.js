@@ -229,7 +229,21 @@ function calculateRAB() {
 }
 
 async function loadRAB() {
-  if (!userId) return;
+  // Always try to load from localStorage first as a fallback/cache
+  const localSaved = localStorage.getItem('rab_state_v1');
+  if (localSaved) {
+    try {
+      const parsed = JSON.parse(localSaved);
+      state = { ...state, ...parsed };
+      updateUIFromState();
+    } catch (e) { console.error('Failed to parse local RAB state', e); }
+  }
+
+  if (!userId) {
+    calculateRAB();
+    return;
+  }
+
   const { data, error } = await supabaseClient
     .from('rab_plans')
     .select('*')
@@ -239,7 +253,7 @@ async function loadRAB() {
     .single();
 
   if (error) {
-    console.log("Belum ada RAB tersimpan, menggunakan nilai default.");
+    console.log("Belum ada RAB tersimpan di database, menggunakan nilai default/lokal.");
     calculateRAB();
     return;
   }
@@ -249,18 +263,24 @@ async function loadRAB() {
     if (data.data) {
       state = { ...state, ...data.data };
       updateUIFromState();
+      // Update local storage to match cloud
+      localStorage.setItem('rab_state_v1', JSON.stringify(state));
     }
   }
 }
 
 async function saveRAB() {
+  updateStateFromUI();
+  // Always save to localStorage immediately for fast persistence
+  localStorage.setItem('rab_state_v1', JSON.stringify(state));
+
   if (!userId) {
-    showToast('Harap login untuk menyimpan RAB.', 'warning');
+    showToast('Tersimpan secara lokal (Mode Guest). Harap login untuk simpan ke cloud.', 'success');
     return;
   }
   
-  updateStateFromUI();
   const btn = document.getElementById('btn-save-rab');
+  const originalText = btn.innerHTML;
   btn.textContent = 'Menyimpan...';
 
   const payload = {
@@ -278,13 +298,18 @@ async function saveRAB() {
     if (res.data && res.data.length > 0) currentRabId = res.data[0].id;
   }
 
-  btn.textContent = '💾 Simpan ke Database';
+  btn.innerHTML = originalText;
   
   if (res.error) {
-    showToast('Gagal menyimpan RAB: ' + res.error.message, 'error');
+    // Check if it's the specific missing table error
+    if (res.error.code === '42P01') {
+      showToast('Gagal menyimpan ke cloud: Tabel rab_plans belum dibuat (cek SQL Editor!). Data tersimpan secara lokal.', 'error');
+    } else {
+      showToast('Gagal menyimpan RAB ke cloud: ' + res.error.message, 'error');
+    }
     console.error(res.error);
   } else {
-    showToast('RAB berhasil disimpan!', 'success');
+    showToast('RAB berhasil disimpan ke Database Cloud!', 'success');
   }
 }
 

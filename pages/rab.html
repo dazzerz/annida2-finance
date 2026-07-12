@@ -86,89 +86,6 @@
             </div>
           </div>
 
-          <!-- B. Pemasukan Awal Pendaftaran -->
-          <div class="rab-card" style="grid-column: 1 / -1;">
-            <div class="rab-card-header">B. Pemasukan Awal Pendaftaran</div>
-            <div class="rab-card-body" style="overflow-x:auto;">
-              <table class="rab-table">
-                <thead>
-                  <tr>
-                    <th>Keterangan</th>
-                    <th width="100">Qty</th>
-                    <th width="150">Nilai (Rp)</th>
-                    <th width="150">Total (Rp)</th>
-                  </tr>
-                </thead>
-                <tbody id="pendaftaran-tbody">
-                  <tr>
-                    <td>Siswa Full Bayar</td>
-                    <td><input type="number" class="form-input qty" value="3" data-target="full" /></td>
-                    <td><input type="number" class="form-input val" value="2500000" data-target="full" /></td>
-                    <td class="row-total" id="pendaftaran-full">7.500.000</td>
-                  </tr>
-                  <tr>
-                    <td>Siswa Bayar Sebagian</td>
-                    <td><input type="number" class="form-input qty" value="3" data-target="sebagian" /></td>
-                    <td><input type="number" class="form-input val" value="2500000" data-target="sebagian" /></td>
-                    <td class="row-total" id="pendaftaran-sebagian">7.500.000</td>
-                  </tr>
-                  <tr>
-                    <td>Siswa Bayar Rp1.850.000</td>
-                    <td><input type="number" class="form-input qty" value="6" data-target="khusus" /></td>
-                    <td><input type="number" class="form-input val" value="1850000" data-target="khusus" /></td>
-                    <td class="row-total" id="pendaftaran-khusus">11.100.000</td>
-                  </tr>
-                  <tr>
-                    <td>Siswa Gratis</td>
-                    <td><input type="number" class="form-input qty" value="10" data-target="gratis" /></td>
-                    <td><input type="number" class="form-input val" value="0" data-target="gratis" readonly /></td>
-                    <td class="row-total" id="pendaftaran-gratis">0</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr class="total-row">
-                    <td colspan="3" align="right">Total Pemasukan Awal</td>
-                    <td id="total-pendaftaran" class="rab-val text-income">26.100.000</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
-          <!-- C. Modal Pengadaan Siswa -->
-          <div class="rab-card" style="grid-column: 1 / -1;">
-            <div class="rab-card-header">C. Modal Pengadaan Siswa</div>
-            <div class="rab-card-body" style="overflow-x:auto;">
-              <table class="rab-table">
-                <thead>
-                  <tr>
-                    <th>Uraian</th>
-                    <th width="200">Biaya/Siswa (Rp)</th>
-                  </tr>
-                </thead>
-                <tbody id="modal-tbody">
-                  <tr><td>Pendaftaran</td><td><input type="number" class="form-input val" value="50000" /></td></tr>
-                  <tr><td>Kitab</td><td><input type="number" class="form-input val" value="25000" /></td></tr>
-                  <tr><td>Buku LKS</td><td><input type="number" class="form-input val" value="66000" /></td></tr>
-                  <tr><td>Foto & Kartu Pelajar</td><td><input type="number" class="form-input val" value="50000" /></td></tr>
-                  <tr><td>Rapor</td><td><input type="number" class="form-input val" value="75000" /></td></tr>
-                  <tr><td>Seragam Batik</td><td><input type="number" class="form-input val" value="65000" /></td></tr>
-                  <tr><td>Seragam Olahraga</td><td><input type="number" class="form-input val" value="95000" /></td></tr>
-                  <tr><td>Bet & Lokasi</td><td><input type="number" class="form-input val" value="7500" /></td></tr>
-                  <tr><td>Baju Muslim</td><td><input type="number" class="form-input val" value="80000" /></td></tr>
-                  <tr><td>Dasi</td><td><input type="number" class="form-input val" value="12000" /></td></tr>
-                  <tr><td>Gesper</td><td><input type="number" class="form-input val" value="10000" /></td></tr>
-                </tbody>
-                <tfoot>
-                  <tr class="total-row">
-                    <td align="right">Total Biaya per Anak</td>
-                    <td id="total-per-anak" class="rab-val">535.500</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
           <!-- D. Total Modal Awal -->
           <div class="rab-card">
             <div class="rab-card-header">D. Total Modal Awal</div>
@@ -196,13 +113,91 @@
             </div>
           </div>
 
+          <!-- B. Pemasukan Awal Pendaftaran -->
+          <div class="rab-card">
+            <div class="rab-card-header">B. Pemasukan Awal Pendaftaran</div>
+            <div class="rab-card-body" style="overflow-x:auto;">
+              <table class="rab-table">
+                <thead>
+                  <tr>
+                    <th>Keterangan</th>
+                    <th width="80">Qty</th>
+                    <th width="120">Nilai (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody id="pendaftaran-tbody">
+                  <tr>
+                    <td>Siswa Full Bayar</td>
+                    <td><input type="number" class="form-input qty" value="3" data-target="full" /></td>
+                    <td><input type="number" class="form-input val" value="2500000" data-target="full" /></td>
+                  </tr>
+                  <tr>
+                    <td>Siswa Bayar Sebagian</td>
+                    <td><input type="number" class="form-input qty" value="3" data-target="sebagian" /></td>
+                    <td><input type="number" class="form-input val" value="2500000" data-target="sebagian" /></td>
+                  </tr>
+                  <tr>
+                    <td>Siswa Bayar Khusus</td>
+                    <td><input type="number" class="form-input qty" value="6" data-target="khusus" /></td>
+                    <td><input type="number" class="form-input val" value="1850000" data-target="khusus" /></td>
+                  </tr>
+                  <tr>
+                    <td>Siswa Gratis</td>
+                    <td><input type="number" class="form-input qty" value="10" data-target="gratis" /></td>
+                    <td><input type="number" class="form-input val" value="0" data-target="gratis" /></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="2" align="right">Total Pemasukan Awal</td>
+                    <td id="total-pendaftaran" class="rab-val text-income text-right" align="right">26.100.000</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- C. Modal Pengadaan Siswa -->
+          <div class="rab-card">
+            <div class="rab-card-header">C. Modal Pengadaan Siswa</div>
+            <div class="rab-card-body" style="overflow-x:auto;">
+              <table class="rab-table">
+                <thead>
+                  <tr>
+                    <th>Uraian</th>
+                    <th width="150">Biaya/Siswa (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-tbody">
+                  <tr><td>Pendaftaran</td><td><input type="number" class="form-input val" value="50000" /></td></tr>
+                  <tr><td>Kitab</td><td><input type="number" class="form-input val" value="25000" /></td></tr>
+                  <tr><td>Buku LKS</td><td><input type="number" class="form-input val" value="66000" /></td></tr>
+                  <tr><td>Foto & Kartu Pelajar</td><td><input type="number" class="form-input val" value="50000" /></td></tr>
+                  <tr><td>Rapor</td><td><input type="number" class="form-input val" value="75000" /></td></tr>
+                  <tr><td>Seragam Batik</td><td><input type="number" class="form-input val" value="65000" /></td></tr>
+                  <tr><td>Seragam Olahraga</td><td><input type="number" class="form-input val" value="95000" /></td></tr>
+                  <tr><td>Bet & Lokasi</td><td><input type="number" class="form-input val" value="7500" /></td></tr>
+                  <tr><td>Baju Muslim</td><td><input type="number" class="form-input val" value="80000" /></td></tr>
+                  <tr><td>Dasi</td><td><input type="number" class="form-input val" value="12000" /></td></tr>
+                  <tr><td>Gesper</td><td><input type="number" class="form-input val" value="10000" /></td></tr>
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td align="right">Total Biaya per Anak</td>
+                    <td id="total-per-anak" class="rab-val text-right" align="right">535.500</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
           <!-- E. Operasional Tahunan -->
-          <div class="rab-card" style="grid-column: 1 / -1;">
+          <div class="rab-card">
             <div class="rab-card-header">E. Operasional Tahunan</div>
             <div class="rab-card-body">
-              <div style="display:flex; gap:1.5rem; flex-wrap:wrap;">
+              <div style="display:flex; flex-direction:column; gap:1.5rem;">
                 
-                <div style="flex:1; min-width:300px;">
+                <div>
                   <h4 style="margin-bottom:1rem;color:var(--text-secondary);">Operasional Bulanan</h4>
                   <table class="rab-table">
                     <thead><tr><th>Uraian</th><th width="150">Biaya/Bulan (Rp)</th></tr></thead>
@@ -213,13 +208,13 @@
                       <tr><td>ATK</td><td><input type="number" class="form-input val ops-bulan" value="250000" /></td></tr>
                     </tbody>
                     <tfoot>
-                      <tr class="total-row"><td align="right">Total / Bulan</td><td id="total-ops-bulan" class="rab-val">700.000</td></tr>
-                      <tr class="total-row"><td align="right">Total 12 Bulan</td><td id="total-ops-12bulan" class="rab-val text-expense">8.400.000</td></tr>
+                      <tr class="total-row"><td align="right">Total / Bulan</td><td id="total-ops-bulan" class="rab-val text-right" align="right">700.000</td></tr>
+                      <tr class="total-row"><td align="right">Total 12 Bulan</td><td id="total-ops-12bulan" class="rab-val text-expense text-right" align="right">8.400.000</td></tr>
                     </tfoot>
                   </table>
                 </div>
 
-                <div style="flex:1; min-width:300px;">
+                <div>
                   <h4 style="margin-bottom:1rem;color:var(--text-secondary);">Pembelian Isi Kelas (Tahunan)</h4>
                   <table class="rab-table">
                     <thead><tr><th>Uraian</th><th width="150">Biaya (Rp)</th></tr></thead>
@@ -229,7 +224,7 @@
                       <tr><td>Pel + Ember</td><td><input type="number" class="form-input val ops-tahunan" value="84000" /></td></tr>
                     </tbody>
                     <tfoot>
-                      <tr class="total-row"><td align="right">Total Isi Kelas (Tahunan)</td><td id="total-isi-kelas" class="rab-val text-expense">199.000</td></tr>
+                      <tr class="total-row"><td align="right">Total Isi Kelas (Thn)</td><td id="total-isi-kelas" class="rab-val text-expense text-right" align="right">199.000</td></tr>
                     </tfoot>
                   </table>
                   <div style="margin-top:1rem; padding:1rem; background:var(--bg-lighter); border-radius:var(--radius-md);">
@@ -245,9 +240,9 @@
           </div>
 
           <!-- F & G. Pemasukan SPP & Ringkasan -->
-          <div class="rab-card" style="grid-column: 1 / -1; display:flex; gap:1.5rem; flex-wrap:wrap; padding:0; background:transparent; border:none; box-shadow:none;">
+          <div style="display:flex; flex-direction:column; gap:1.5rem;">
             
-            <div class="rab-card" style="flex:1; min-width:300px; margin:0;">
+            <div class="rab-card">
               <div class="rab-card-header">F. Pemasukan SPP Tahunan</div>
               <div class="rab-card-body">
                 <div class="form-group row">
@@ -269,7 +264,7 @@
               </div>
             </div>
 
-            <div class="rab-card" style="flex:1; min-width:300px; margin:0;">
+            <div class="rab-card">
               <div class="rab-card-header" style="background:var(--gradient-primary); color:white; border-bottom:none;">G. Ringkasan RAB</div>
               <div class="rab-card-body">
                 <div class="form-group row">
