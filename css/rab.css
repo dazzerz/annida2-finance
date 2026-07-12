@@ -1,0 +1,122 @@
+/* RAB CSS Styling */
+
+.rab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.rab-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rab-card-header {
+  background: var(--bg-lighter);
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.rab-card-body {
+  padding: 1.25rem;
+  flex: 1;
+}
+
+.rab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.rab-table th {
+  text-align: left;
+  padding: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.rab-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.rab-table tfoot td {
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: none;
+  padding-top: 1rem;
+}
+
+.form-group.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.form-group.row label {
+  margin-bottom: 0;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.form-group.row .form-input {
+  width: 120px;
+  text-align: right;
+  padding: 0.4rem 0.6rem;
+}
+
+.total-row {
+  border-top: 2px dashed var(--border-color);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.rab-val {
+  font-weight: 700;
+  font-family: 'Inter', monospace;
+  font-size: 1.05rem;
+}
+
+.row-total {
+  font-weight: 700;
+  text-align: right;
+  font-family: 'Inter', monospace;
+}
+
+.text-income {
+  color: var(--income-color) !important;
+}
+
+.text-expense {
+  color: var(--expense-color) !important;
+}
+
+input.form-input.qty {
+  width: 70px;
+  text-align: center;
+}
+
+input.form-input.val {
+  width: 100%;
+  text-align: right;
+}
+
+input.form-input[readonly] {
+  background-color: var(--bg-lighter);
+  opacity: 0.7;
+}
+
+.mt-md {
+  margin-top: 1rem;
+}

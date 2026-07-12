@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAB Kelas — Annida2Finance</title>
+  <meta name="description" content="Rencana Anggaran Biaya Kelas." />
+  <link rel="icon" type="image/png" href="../assets/logo/1.png" />
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/rab.css" />
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <img src="../assets/logo/1.png" alt="Logo" class="sidebar-logo" style="background:transparent;box-shadow:none;padding:2px;" />
+        <span class="sidebar-title">Annida2Finance</span>
+      </div>
+      <div class="sidebar-nav">
+        <span class="nav-section-label">Menu Utama</span>
+        <a href="../index.html" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a href="./transactions.html" class="nav-item" id="nav-transactions"><span class="nav-icon">💸</span> Transaksi</a>
+        <a href="./budget.html" class="nav-item" id="nav-budget"><span class="nav-icon">💰</span> Budget</a>
+        <a href="./reports.html" class="nav-item"><span class="nav-icon">📄</span> Laporan</a>
+        <a href="./rab.html" class="nav-item active"><span class="nav-icon">📋</span> RAB Kelas</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="nav-user-name">Memuat...</div>
+            <div class="user-email" id="nav-user-email">—</div>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="logout-btn">🚪 Keluar</button>
+      </div>
+    </nav>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+      <header class="topbar">
+        <div class="flex items-center gap-md">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <div class="topbar-left">
+            <div class="topbar-greeting">Perencanaan</div>
+            <div class="topbar-title">RAB Kelas Annida 2</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="theme-toggle">☀️</button>
+        </div>
+      </header>
+
+      <main class="dashboard-container" style="max-width:1200px;margin:0 auto;padding-bottom:4rem;">
+        
+        <!-- Toolbar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <h2 style="font-size:1.2rem; font-weight:700;">Pengaturan Parameter RAB</h2>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-outline btn-sm" id="btn-save-rab" style="gap:0.4rem;">💾 Simpan ke Database</button>
+            <button class="btn btn-primary btn-sm" id="btn-sync-budget" style="gap:0.4rem;">🔄 Sinkronkan ke Budget</button>
+          </div>
+        </div>
+
+        <div class="rab-grid">
+          <!-- A. Data Siswa -->
+          <div class="rab-card">
+            <div class="rab-card-header">A. Data Siswa</div>
+            <div class="rab-card-body">
+              <div class="form-group row">
+                <label>Siswa Laki-laki</label>
+                <input type="number" id="siswa-l" class="form-input" value="8" min="0" />
+              </div>
+              <div class="form-group row">
+                <label>Siswa Perempuan</label>
+                <input type="number" id="siswa-p" class="form-input" value="14" min="0" />
+              </div>
+              <div class="form-group row total-row">
+                <label>Total Siswa</label>
+                <span id="total-siswa" class="rab-val">22</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- B. Pemasukan Awal Pendaftaran -->
+          <div class="rab-card" style="grid-column: 1 / -1;">
+            <div class="rab-card-header">B. Pemasukan Awal Pendaftaran</div>
+            <div class="rab-card-body" style="overflow-x:auto;">
+              <table class="rab-table">
+                <thead>
+                  <tr>
+                    <th>Keterangan</th>
+                    <th width="100">Qty</th>
+                    <th width="150">Nilai (Rp)</th>
+                    <th width="150">Total (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody id="pendaftaran-tbody">
+                  <tr>
+                    <td>Siswa Full Bayar</td>
+                    <td><input type="number" class="form-input qty" value="3" data-target="full" /></td>
+                    <td><input type="number" class="form-input val" value="2500000" data-target="full" /></td>
+                    <td class="row-total" id="pendaftaran-full">7.500.000</td>
+                  </tr>
+                  <tr>
+                    <td>Siswa Bayar Sebagian</td>
+                    <td><input type="number" class="form-input qty" value="3" data-target="sebagian" /></td>
+                    <td><input type="number" class="form-input val" value="2500000" data-target="sebagian" /></td>
+                    <td class="row-total" id="pendaftaran-sebagian">7.500.000</td>
+                  </tr>
+                  <tr>
+                    <td>Siswa Bayar Rp1.850.000</td>
+                    <td><input type="number" class="form-input qty" value="6" data-target="khusus" /></td>
+                    <td><input type="number" class="form-input val" value="1850000" data-target="khusus" /></td>
+                    <td class="row-total" id="pendaftaran-khusus">11.100.000</td>
+                  </tr>
+                  <tr>
+                    <td>Siswa Gratis</td>
+                    <td><input type="number" class="form-input qty" value="10" data-target="gratis" /></td>
+                    <td><input type="number" class="form-input val" value="0" data-target="gratis" readonly /></td>
+                    <td class="row-total" id="pendaftaran-gratis">0</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="3" align="right">Total Pemasukan Awal</td>
+                    <td id="total-pendaftaran" class="rab-val text-income">26.100.000</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- C. Modal Pengadaan Siswa -->
+          <div class="rab-card" style="grid-column: 1 / -1;">
+            <div class="rab-card-header">C. Modal Pengadaan Siswa</div>
+            <div class="rab-card-body" style="overflow-x:auto;">
+              <table class="rab-table">
+                <thead>
+                  <tr>
+                    <th>Uraian</th>
+                    <th width="200">Biaya/Siswa (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-tbody">
+                  <tr><td>Pendaftaran</td><td><input type="number" class="form-input val" value="50000" /></td></tr>
+                  <tr><td>Kitab</td><td><input type="number" class="form-input val" value="25000" /></td></tr>
+                  <tr><td>Buku LKS</td><td><input type="number" class="form-input val" value="66000" /></td></tr>
+                  <tr><td>Foto & Kartu Pelajar</td><td><input type="number" class="form-input val" value="50000" /></td></tr>
+                  <tr><td>Rapor</td><td><input type="number" class="form-input val" value="75000" /></td></tr>
+                  <tr><td>Seragam Batik</td><td><input type="number" class="form-input val" value="65000" /></td></tr>
+                  <tr><td>Seragam Olahraga</td><td><input type="number" class="form-input val" value="95000" /></td></tr>
+                  <tr><td>Bet & Lokasi</td><td><input type="number" class="form-input val" value="7500" /></td></tr>
+                  <tr><td>Baju Muslim</td><td><input type="number" class="form-input val" value="80000" /></td></tr>
+                  <tr><td>Dasi</td><td><input type="number" class="form-input val" value="12000" /></td></tr>
+                  <tr><td>Gesper</td><td><input type="number" class="form-input val" value="10000" /></td></tr>
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td align="right">Total Biaya per Anak</td>
+                    <td id="total-per-anak" class="rab-val">535.500</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- D. Total Modal Awal -->
+          <div class="rab-card">
+            <div class="rab-card-header">D. Total Modal Awal</div>
+            <div class="rab-card-body">
+              <div class="form-group row">
+                <label>Modal Laki-laki</label>
+                <span id="modal-l" class="rab-val">4.284.000</span>
+              </div>
+              <div class="form-group row">
+                <label>Modal Perempuan</label>
+                <span id="modal-p" class="rab-val">7.497.000</span>
+              </div>
+              <div class="form-group row">
+                <label>Total Modal Anak</label>
+                <span id="total-modal-anak" class="rab-val">11.781.000</span>
+              </div>
+              <div class="form-group row">
+                <label>Dana Darurat (30%)</label>
+                <span id="dana-darurat" class="rab-val">3.534.300</span>
+              </div>
+              <div class="form-group row total-row mt-md">
+                <label>Total Modal + Darurat</label>
+                <span id="total-modal-all" class="rab-val text-expense">15.315.300</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- E. Operasional Tahunan -->
+          <div class="rab-card" style="grid-column: 1 / -1;">
+            <div class="rab-card-header">E. Operasional Tahunan</div>
+            <div class="rab-card-body">
+              <div style="display:flex; gap:1.5rem; flex-wrap:wrap;">
+                
+                <div style="flex:1; min-width:300px;">
+                  <h4 style="margin-bottom:1rem;color:var(--text-secondary);">Operasional Bulanan</h4>
+                  <table class="rab-table">
+                    <thead><tr><th>Uraian</th><th width="150">Biaya/Bulan (Rp)</th></tr></thead>
+                    <tbody id="ops-bulan-tbody">
+                      <tr><td>Listrik</td><td><input type="number" class="form-input val ops-bulan" value="150000" /></td></tr>
+                      <tr><td>Air</td><td><input type="number" class="form-input val ops-bulan" value="200000" /></td></tr>
+                      <tr><td>Kebersihan</td><td><input type="number" class="form-input val ops-bulan" value="100000" /></td></tr>
+                      <tr><td>ATK</td><td><input type="number" class="form-input val ops-bulan" value="250000" /></td></tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="total-row"><td align="right">Total / Bulan</td><td id="total-ops-bulan" class="rab-val">700.000</td></tr>
+                      <tr class="total-row"><td align="right">Total 12 Bulan</td><td id="total-ops-12bulan" class="rab-val text-expense">8.400.000</td></tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <div style="flex:1; min-width:300px;">
+                  <h4 style="margin-bottom:1rem;color:var(--text-secondary);">Pembelian Isi Kelas (Tahunan)</h4>
+                  <table class="rab-table">
+                    <thead><tr><th>Uraian</th><th width="150">Biaya (Rp)</th></tr></thead>
+                    <tbody id="ops-tahunan-tbody">
+                      <tr><td>Bingkai Presiden dkk</td><td><input type="number" class="form-input val ops-tahunan" value="75000" /></td></tr>
+                      <tr><td>Sapu Set Pengki</td><td><input type="number" class="form-input val ops-tahunan" value="40000" /></td></tr>
+                      <tr><td>Pel + Ember</td><td><input type="number" class="form-input val ops-tahunan" value="84000" /></td></tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="total-row"><td align="right">Total Isi Kelas (Tahunan)</td><td id="total-isi-kelas" class="rab-val text-expense">199.000</td></tr>
+                    </tfoot>
+                  </table>
+                  <div style="margin-top:1rem; padding:1rem; background:var(--bg-lighter); border-radius:var(--radius-md);">
+                    <div class="form-group row">
+                      <label>Total Pengeluaran Tahunan</label>
+                      <span id="total-pengeluaran-tahunan" class="rab-val text-expense">8.599.000</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- F & G. Pemasukan SPP & Ringkasan -->
+          <div class="rab-card" style="grid-column: 1 / -1; display:flex; gap:1.5rem; flex-wrap:wrap; padding:0; background:transparent; border:none; box-shadow:none;">
+            
+            <div class="rab-card" style="flex:1; min-width:300px; margin:0;">
+              <div class="rab-card-header">F. Pemasukan SPP Tahunan</div>
+              <div class="rab-card-body">
+                <div class="form-group row">
+                  <label>Jumlah Anak Bayar SPP</label>
+                  <input type="number" id="spp-anak" class="form-input" value="9" min="0" />
+                </div>
+                <div class="form-group row">
+                  <label>SPP / Bulan / Anak (Rp)</label>
+                  <input type="number" id="spp-nominal" class="form-input" value="150000" min="0" />
+                </div>
+                <div class="form-group row mt-md">
+                  <label>Total SPP / Bulan</label>
+                  <span id="total-spp-bulan" class="rab-val">1.350.000</span>
+                </div>
+                <div class="form-group row total-row mt-md">
+                  <label>Total SPP Tahunan</label>
+                  <span id="total-spp-tahunan" class="rab-val text-income">16.200.000</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rab-card" style="flex:1; min-width:300px; margin:0;">
+              <div class="rab-card-header" style="background:var(--gradient-primary); color:white; border-bottom:none;">G. Ringkasan RAB</div>
+              <div class="rab-card-body">
+                <div class="form-group row">
+                  <label>Pemasukan Pendaftaran</label>
+                  <span id="ringkasan-pendaftaran" class="rab-val">26.100.000</span>
+                </div>
+                <div class="form-group row">
+                  <label>Pemasukan SPP (1 Thn)</label>
+                  <span id="ringkasan-spp" class="rab-val">16.200.000</span>
+                </div>
+                <div class="form-group row total-row" style="border-bottom:1px solid var(--border-color); padding-bottom:1rem;">
+                  <label>TOTAL PEMASUKAN</label>
+                  <span id="ringkasan-total-pemasukan" class="rab-val text-income" style="font-size:1.2rem;">42.300.000</span>
+                </div>
+                
+                <div class="form-group row mt-md">
+                  <label>Modal Awal + Darurat</label>
+                  <span id="ringkasan-modal" class="rab-val">15.315.300</span>
+                </div>
+                <div class="form-group row">
+                  <label>Operasional Tahunan</label>
+                  <span id="ringkasan-ops" class="rab-val">8.599.000</span>
+                </div>
+                <div class="form-group row total-row" style="border-bottom:1px solid var(--border-color); padding-bottom:1rem;">
+                  <label>TOTAL PENGELUARAN</label>
+                  <span id="ringkasan-total-pengeluaran" class="rab-val text-expense" style="font-size:1.2rem;">23.914.300</span>
+                </div>
+
+                <div class="form-group row total-row mt-md">
+                  <label>SISA SALDO / SURPLUS</label>
+                  <span id="ringkasan-surplus" class="rab-val" style="font-size:1.4rem; color:var(--income-color);">18.385.700</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="../js/supabase-client.js"></script>
+  <script type="module" src="../js/auth.js"></script>
+  <script type="module" src="../js/rab.js"></script>
+</body>
+</html>
