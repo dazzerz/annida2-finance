@@ -10,27 +10,27 @@
    ===================================================== */
 :root {
   /* Colors - Dark Theme (default) */
-  --bg-primary: #0a0f1e;
-  --bg-secondary: #0d1426;
-  --bg-card: #111827;
-  --bg-card-hover: #1a2235;
-  --bg-elevated: #1e2a3d;
-  --bg-input: #0f1829;
-  --bg-sidebar: #080d1a;
+  --bg-primary: #0a0f12; /* Darker near-black for green contrast */
+  --bg-secondary: #10161a;
+  --bg-card: #141c21;
+  --bg-card-hover: #19242a;
+  --bg-elevated: #1a242a;
+  --bg-input: #0f161a;
+  --bg-sidebar: #060a0c;
 
-  --border-color: rgba(255, 255, 255, 0.06);
-  --border-focus: rgba(99, 179, 237, 0.4);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(124, 237, 80, 0.4); /* Green focus */
 
-  --text-primary: #f0f4ff;
-  --text-secondary: #8899b0;
-  --text-muted: #4a5568;
-  --text-inverse: #0a0f1e;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0a0f12;
 
-  /* Brand Colors */
-  --accent-primary: #3b82f6;
-  --accent-primary-glow: rgba(59, 130, 246, 0.15);
-  --accent-secondary: #10b981;
-  --accent-secondary-glow: rgba(16, 185, 129, 0.15);
+  /* Brand Colors (Annida Logo) */
+  --accent-primary: #7ced50; /* Lime green from logo */
+  --accent-primary-glow: rgba(124, 237, 80, 0.15);
+  --accent-secondary: #000000; /* Black from logo stripes */
+  --accent-secondary-glow: rgba(0, 0, 0, 0.15);
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
   --accent-danger-glow: rgba(239, 68, 68, 0.15);
@@ -45,11 +45,11 @@
   --expense-bg: rgba(239, 68, 68, 0.1);
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  --gradient-success: linear-gradient(135deg, #10b981, #06b6d4);
-  --gradient-danger: linear-gradient(135deg, #ef4444, #ec4899);
-  --gradient-gold: linear-gradient(135deg, #f59e0b, #fbbf24);
-  --gradient-sidebar: linear-gradient(180deg, #080d1a 0%, #0a1020 100%);
+  --gradient-primary: linear-gradient(135deg, #7ced50, #4ade80); /* Bright green gradient */
+  --gradient-success: linear-gradient(135deg, #10b981, #059669);
+  --gradient-danger: linear-gradient(135deg, #ef4444, #be123c);
+  --gradient-gold: linear-gradient(135deg, #f59e0b, #d97706);
+  --gradient-sidebar: linear-gradient(180deg, #060a0c 0%, #080d11 100%);
   --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
 
   /* Glass effect */
@@ -103,29 +103,35 @@
 
 /* Light Theme Override */
 [data-theme="light"] {
-  --bg-primary: #f0f4ff;
-  --bg-secondary: #e8eeff;
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-card-hover: #f8faff;
+  --bg-card-hover: #f8fafc;
   --bg-elevated: #ffffff;
-  --bg-input: #f4f7ff;
-  --bg-sidebar: #1e2a3d;
+  --bg-input: #f1f5f9;
+  --bg-sidebar: #0f172a; /* Dark sidebar in light mode often looks good, but let's make it dark green/black like logo */
 
   --border-color: rgba(0, 0, 0, 0.08);
-  --border-focus: rgba(59, 130, 246, 0.4);
+  --border-focus: rgba(124, 237, 80, 0.4);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --text-inverse: #f0f4ff;
+  --text-inverse: #f8fafc;
 
+  /* Brand Colors Override for Light Theme */
+  --accent-primary: #60cc38; /* Slightly darker green for light theme contrast */
+  --accent-primary-glow: rgba(96, 204, 56, 0.15);
+  --accent-secondary: #000000;
+  --accent-secondary-glow: rgba(0, 0, 0, 0.15);
+  
+  --gradient-primary: linear-gradient(135deg, #60cc38, #4ade80);
+  --gradient-sidebar: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+  --gradient-card: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%);
+  
   --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 /* =====================================================

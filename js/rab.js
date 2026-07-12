@@ -334,7 +334,7 @@ async function syncToBudget() {
   // Listrik, Air, Kebersihan, ATK, Isi Kelas
   const opsItems = [
     { name: 'Listrik (Operasional)', icon: '⚡', color: '#eab308', amount: state.opsBulan[0] },
-    { name: 'Air (Operasional)', icon: '💧', color: '#3b82f6', amount: state.opsBulan[1] },
+    { name: 'Air (Operasional)', icon: '💧', color: '#7ced50', amount: state.opsBulan[1] },
     { name: 'Kebersihan (Operasional)', icon: '🧹', color: '#10b981', amount: state.opsBulan[2] },
     { name: 'ATK (Operasional)', icon: '✏️', color: '#8b5cf6', amount: state.opsBulan[3] },
     { name: 'Isi Kelas (Operasional)', icon: '🏫', color: '#ec4899', amount: Math.round(state.opsTahun.reduce((a, b) => a + b, 0) / 12) } // Average per month

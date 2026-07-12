@@ -57,7 +57,7 @@ export async function exportToPDF(reportData) {
       doc.text(formatCurrency(cat.total), pageWidth - margin, y + 4.5, { align: 'right' });
       doc.setFillColor(230,235,245); doc.roundedRect(margin + 25, y, maxBarWidth, 5, 1, 1, 'F');
       if (barWidth > 0) {
-        const hex = cat.color || '#3b82f6';
+        const hex = cat.color || '#7ced50';
         doc.setFillColor(parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16));
         doc.roundedRect(margin + 25, y, barWidth, 5, 1, 1, 'F');
       }
