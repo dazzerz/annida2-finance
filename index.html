@@ -9,66 +9,12 @@
   <link rel="stylesheet" href="./css/global.css" />
   <link rel="stylesheet" href="./css/dashboard.css" />
   <!-- Chart.js via ESM is imported in charts.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
   <div class="app-layout">
-
-    <!-- ── SIDEBAR ── -->
-    <nav class="sidebar" id="sidebar" aria-label="Navigasi utama">
-      <div class="sidebar-header">
-        <img src="./assets/logo/1.png" alt="Logo" class="sidebar-logo" style="background:transparent;box-shadow:none;padding:2px;" />
-        <span class="sidebar-title">Annida2Finance</span>
-      </div>
-
-      <div class="sidebar-nav">
-        <span class="nav-section-label">Menu Utama</span>
-        <a href="./index.html" class="nav-item" id="nav-dashboard">
-          <span class="nav-icon">🏠</span> Dashboard
-        </a>
-        <a href="./pages/transactions.html" class="nav-item" id="nav-transactions">
-          <span class="nav-icon">💸</span> Transaksi
-        </a>
-        <a href="./pages/budget.html" class="nav-item"><span class="nav-icon">💰</span> Budget</a>
-        <a href="./pages/reports.html" class="nav-item"><span class="nav-icon">📄</span> Laporan</a>
-        <a href="./pages/rab.html" class="nav-item"><span class="nav-icon">📋</span> RAB Kelas</a>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="user-avatar" id="user-avatar">?</div>
-          <div class="user-info">
-            <div class="user-name" id="nav-user-name">Memuat...</div>
-            <div class="user-email" id="nav-user-email">—</div>
-          </div>
-        </div>
-        <button class="sidebar-logout-btn" id="logout-btn" aria-label="Keluar">
-          <span>🚪</span> Keluar
-        </button>
-      </div>
-    </nav>
-
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
-
-    <!-- ── MAIN CONTENT ── -->
+    <!-- Dynamic Layout Injected Here -->
     <div class="main-content">
-
-      <!-- Topbar -->
-      <header class="topbar">
-        <div class="flex items-center gap-md">
-          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Buka menu">☰</button>
-          <div class="topbar-left">
-            <div class="topbar-greeting" id="greeting-text">Selamat Datang, 👋</div>
-            <div class="topbar-title" id="user-name-display">Memuat...</div>
-          </div>
-        </div>
-        <div class="topbar-right">
-          <div style="font-size:0.8rem;color:var(--text-muted);" id="current-date"></div>
-          <button class="theme-toggle" id="theme-toggle" aria-label="Ganti tema">☀️</button>
-        </div>
-      </header>
-
       <!-- Page Content -->
       <main class="page-content">
 

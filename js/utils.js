@@ -2,6 +2,14 @@
 // ANNIDA2FINANCE - Utility Functions (shared)
 // =====================================================
 
+// Escape HTML untuk mencegah XSS
+export function escapeHTML(str) {
+  if (!str) return '-';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 // Format currency IDR
 export function formatCurrency(amount) {
   return new Intl.NumberFormat('id-ID', {

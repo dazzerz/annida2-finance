@@ -3,6 +3,7 @@
 // =====================================================
 import supabaseClient from './supabase.js';
 import { getOptionalUser, handleLogout } from './auth.js';
+import { injectLayout } from './layout.js';
 import { formatCurrency, formatDate, getMonthYear, showToast, setupThemeToggle, applySavedTheme } from './utils.js';
 import {
   fetchCategories, fetchMonthlySummary, fetchMonthlyTrend, fetchCategoryBreakdown,
@@ -11,6 +12,11 @@ import {
 } from './transactions.js';
 import { fetchBudgets, fetchBudgetSpending, renderBudgetOverview } from './budget.js';
 import { renderTrendChart, renderDonutChart, setupChartDefaults } from './charts.js';
+
+// State Global
+let currentMonth = new Date().getMonth() + 1;
+let currentYear = new Date().getFullYear();
+let currentUser = null;
 
 // ── Counter animation ─────────────────────────────
 function animateCounter(element, target) {
@@ -153,6 +159,7 @@ function closeModal() {
 
 // ── Main ──────────────────────────────────────────
 async function main() {
+  injectLayout('dashboard', 'Selamat Datang, 👋', 'Memuat...');
   applySavedTheme();
 
   const user = await getOptionalUser();

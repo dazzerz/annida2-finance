@@ -2,7 +2,7 @@
 // ANNIDA2FINANCE - Transactions Module
 // =====================================================
 import supabaseClient from './supabase.js';
-import { formatCurrency, formatDate, showToast } from './utils.js';
+import { formatCurrency, formatDate, showToast, escapeHTML } from './utils.js';
 
 let allCategories = [];
 const PAGE_SIZE = 10;
@@ -151,7 +151,7 @@ export function renderTransactionsTable(transactions, canEdit = true) {
       
     return `<tr>
       <td><span style="font-size:1.2rem">${cat?.icon || '💰'}</span></td>
-      <td><div style="font-weight:600;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;padding-right:1rem;" title="${t.description || '-'}">${t.description || '-'}</div></td>
+      <td><div style="font-weight:600;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;padding-right:1rem;" title="${escapeHTML(t.description)}">${escapeHTML(t.description)}</div></td>
       <td>${formatDate(t.date)}</td>
       <td><span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">${cat?.name || 'Lainnya'}</span></td>
       <td><span class="badge ${isIncome ? 'badge-income' : 'badge-expense'}">${isIncome ? '↑ Pemasukan' : '↓ Pengeluaran'}</span></td>
@@ -199,7 +199,7 @@ export function renderRecentTransactions(transactions) {
     return `<div class="transaction-item">
       <div class="transaction-icon" style="background:${cat?.color || '#64748b'}22">${cat?.icon || '💰'}</div>
       <div class="transaction-info">
-        <div class="transaction-name">${t.description || cat?.name || 'Transaksi'}</div>
+        <div class="transaction-name">${escapeHTML(t.description || cat?.name || 'Transaksi')}</div>
         <div class="transaction-date">${formatDate(t.date)}</div>
       </div>
       <div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div>

@@ -2,7 +2,7 @@
 // ANNIDA2FINANCE - Budget Module
 // =====================================================
 import supabaseClient from './supabase.js';
-import { formatCurrency } from './utils.js';
+import { formatCurrency, escapeHTML } from './utils.js';
 
 export async function fetchBudgets(userId, year, month) {
   if (!year || !month) return [];
@@ -73,8 +73,8 @@ export function renderBudgetCards(budgets, spending, canEdit = true) {
       <div class="budget-card">
         <div class="budget-card-header">
           <div class="budget-category">
-            <span class="budget-icon">${b.categories?.icon || '💰'}</span>
-            <span class="budget-name">${b.categories?.name || 'Kategori'}</span>
+            <span class="budget-icon">${escapeHTML(b.categories?.icon || '💰')}</span>
+            <span class="budget-name">${escapeHTML(b.categories?.name || 'Kategori')}</span>
           </div>
           ${actionHtml}
         </div>
@@ -110,7 +110,7 @@ export function renderBudgetOverview(budgets, spending) {
     else if (percent >= 80) fillClass = 'warning';
     return `<div class="budget-item">
       <div class="budget-item-header">
-        <div class="budget-item-label"><span class="budget-item-emoji">${cat?.icon || '💰'}</span>${cat?.name || 'Kategori'}</div>
+        <div class="budget-item-label"><span class="budget-item-emoji">${escapeHTML(cat?.icon || '💰')}</span>${escapeHTML(cat?.name || 'Kategori')}</div>
         <div class="budget-item-amount"><span>${formatCurrency(spent)}</span> / ${formatCurrency(budget)}</div>
       </div>
       <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${percent}%"></div></div>

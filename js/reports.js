@@ -1,7 +1,7 @@
 // =====================================================
 // ANNIDA2FINANCE - Reports Module
 // =====================================================
-import { formatCurrency, formatDate } from './utils.js';
+import { formatCurrency, formatDate, escapeHTML } from './utils.js';
 
 export async function exportToPDF(reportData) {
   const { jsPDF } = window.jspdf;
@@ -135,8 +135,8 @@ export function renderReportTransactions(transactions, page = 1) {
     return `<div class="transaction-item">
       <div class="transaction-icon" style="background:${cat?.color||'#64748b'}22">${cat?.icon||'💰'}</div>
       <div class="transaction-info">
-        <div class="transaction-name">${t.description||cat?.name||'Transaksi'}</div>
-        <div class="transaction-date">${cat?.name||'Lainnya'} · ${formatDate(t.date)}</div>
+        <div class="transaction-name">${escapeHTML(t.description||cat?.name||'Transaksi')}</div>
+        <div class="transaction-date">${escapeHTML(cat?.name||'Lainnya')} · ${formatDate(t.date)}</div>
       </div>
       <div class="transaction-amount ${t.type}">${isIncome?'+':'-'}${formatCurrency(t.amount)}</div>
     </div>`;
