@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import cron from 'node-cron';
@@ -209,10 +209,22 @@ async function startWhatsAppBot() {
   
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
   
+  // Dapatkan versi WhatsApp terbaru untuk menghindari error protokol
+  let version = [2, 3000, 1015970092]; // Fallback version
+  try {
+    const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
+    version = latestVersion;
+    console.log(`🌐 Menggunakan versi WhatsApp Web v${version.join('.')}, isLatest: ${isLatest}`);
+  } catch (err) {
+    console.log('⚠️ Gagal memuat versi terbaru WhatsApp Web, menggunakan versi bawaan.');
+  }
+
   const sock = makeWASocket({
+    version,
     auth: state,
     printQRInTerminal: false, // Kita print manual menggunakan qrcode-terminal agar lebih rapi
-    logger: pino({ level: 'silent' }) // Matikan log verbose Baileys
+    logger: pino({ level: 'silent' }), // Matikan log verbose Baileys
+    browser: ['Annida2Finance Bot', 'Chrome', '1.0.0']
   });
 
   // Handle connection updates (QR code generation, reconnection, etc.)
@@ -225,10 +237,15 @@ async function startWhatsAppBot() {
     }
     
     if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log(`🔌 Koneksi terputus karena: ${lastDisconnect?.error}. Memulai ulang koneksi: ${shouldReconnect}`);
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      console.log(`🔌 Koneksi terputus. Status Code: ${statusCode || 'Unknown'}. Error: ${lastDisconnect?.error}`);
+      
       if (shouldReconnect) {
-        startWhatsAppBot();
+        console.log('🔄 Mencoba menghubungkan kembali dalam 5 detik...');
+        setTimeout(() => {
+          startWhatsAppBot();
+        }, 5000);
       } else {
         console.log('❌ Anda telah keluar dari sesi WhatsApp. Silakan hapus folder "auth_info" dan jalankan ulang bot untuk login.');
       }
