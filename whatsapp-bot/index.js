@@ -201,6 +201,7 @@ async function startWhatsAppBot() {
     }
 
     console.log(`\n[DEBUG] Pesan Masuk: "${msgText}" | Dari JID: ${fromJid} | Pengirim JID: ${participantJid || fromJid} | Clean Number: ${cleanNumber}`);
+    console.log('[DEBUG] Full Msg object:', JSON.stringify(msg, null, 2));
 
     if (!textTrimmed) {
       console.log('[DEBUG] Pesan kosong atau tidak didukung, diabaikan.');
