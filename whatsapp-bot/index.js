@@ -76,131 +76,24 @@ async function getMonthlySummary(userId) {
   };
 }
 
-// Robust message parser for transactions
-async function parseTransactionMessage(text, userId) {
-  // 1. Ambil kategori milik user dari database
-  const { data: categories, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('user_id', userId);
-    
-  if (error || !categories) return null;
-  
-  // 2. Bersihkan teks dan cari nominal angka (amount)
-  // Menghapus 'rp', spasi, titik, koma yang biasanya jadi pemisah ribuan
-  const textClean = text.replace(/rp\.?/gi, '').trim();
-  
-  // Cari semua substring yang mirip angka (misal: 15.000 atau 15000)
-  const numberRegex = /\b\d+[\d.,]*\b/g;
-  const matches = textClean.match(numberRegex);
-  
-  if (!matches) return null; // Tidak ada nominal angka ditemukan
-  
-  let amount = null;
-  let amountString = null;
-  
-  // Cari angka pertama yang valid (di atas 100 rupiah untuk mengabaikan kuantiti kecil seperti "beli 2")
-  for (const match of matches) {
-    const cleaned = match.replace(/[.,]/g, '');
-    const num = parseFloat(cleaned);
-    if (!isNaN(num) && num >= 100) {
-      amount = num;
-      amountString = match;
-      break;
-    }
-  }
-  
-  if (!amount) {
-    const cleaned = matches[0].replace(/[.,]/g, '');
-    amount = parseFloat(cleaned);
-    amountString = matches[0];
-  }
-  
-  if (isNaN(amount) || amount <= 0) return null;
-  
-  // 3. Cari kategori yang cocok
-  let matchedCategory = null;
-  let categoryToken = null;
-  const words = textClean.toLowerCase().split(/\s+/);
-  
-  for (const category of categories) {
-    const catNameLower = category.name.toLowerCase();
-    
-    // Periksa apakah ada kata di pesan yang cocok dengan nama kategori (atau sebaliknya)
-    for (const word of words) {
-      if (word.length >= 3 && (catNameLower.includes(word) || word.includes(catNameLower))) {
-        matchedCategory = category;
-        categoryToken = word;
-        break;
-      }
-    }
-    if (matchedCategory) break;
-  }
-  
-  // Jika tidak ada kategori yang cocok, gunakan fallback kategori 'Lainnya' pengeluaran
-  if (!matchedCategory) {
-    matchedCategory = categories.find(c => c.name.toLowerCase() === 'lainnya' && c.type === 'expense') || 
-                      categories.find(c => c.type === 'expense');
-  }
-  
-  if (!matchedCategory) return null;
-  
-  // 4. Ambil deskripsi/keterangan transaksi
-  // Hapus nominal uang, kata kategori yang terdeteksi, dan "rp" dari pesan asli
-  let description = text;
-  if (amountString) {
-    description = description.replace(amountString, '');
-  }
-  description = description.replace(/rp\.?/gi, '');
-  if (categoryToken) {
-    const escapedToken = categoryToken.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    description = description.replace(new RegExp(escapedToken, 'i'), '');
-  }
-  
-  // Bersihkan spasi berlebih
-  description = description.replace(/\s+/g, ' ').trim();
-  
-  // Jika deskripsi kosong, beri deskripsi default
-  if (!description) {
-    description = `Transaksi via WhatsApp (${matchedCategory.name})`;
-  }
-  
-  return {
-    category_id: matchedCategory.id,
-    amount: amount,
-    type: matchedCategory.type,
-    description: description,
-    category_name: matchedCategory.name,
-    category_icon: matchedCategory.icon || '💰'
-  };
-}
-
-// Function to generate and send daily report to a user
+// Function to generate and send daily report to a user's group or private chat
 async function sendDailyReport(sock, whatsappNumber, profile) {
   try {
     const summary = await getMonthlySummary(profile.id);
-    const todayStr = new Date().toLocaleDateString('id-ID', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
     
-    const reportMessage = `☀️ *Laporan Keuangan Pagi* ☀️
-Nama Akun: *${profile.full_name || 'Pengguna'}*
-Tanggal: ${todayStr}
-
-Pemasukan : ${formatRupiah(summary.income)}
+    // User requested format:
+    // Pemasukan : 
+    // Pengeluaran : 
+    // saldo sisa : 
+    const reportMessage = `Pemasukan : ${formatRupiah(summary.income)}
 Pengeluaran : ${formatRupiah(summary.expense)}
-Saldo sisa : ${formatRupiah(summary.balance)}
-
-Semangat beraktivitas hari ini! 💪`;
+saldo sisa : ${formatRupiah(summary.balance)}`;
 
     const jid = profile.whatsapp_group_id || `${whatsappNumber}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: reportMessage });
-    console.log(`✉️ Laporan harian berhasil dikirim ke ${jid} (${profile.full_name || 'User'})`);
+    console.log(`✉️ Laporan keuangan berhasil dikirim ke ${jid} (Akun: ${profile.full_name || 'User'})`);
   } catch (err) {
-    console.error(`❌ Gagal mengirim laporan harian ke ${whatsappNumber}:`, err);
+    console.error(`❌ Gagal mengirim laporan keuangan ke ${whatsappNumber}:`, err);
   }
 }
 
@@ -253,7 +146,7 @@ async function startWhatsAppBot() {
     } else if (connection === 'open') {
       console.log('✅ Bot WhatsApp berhasil tersambung dan siap digunakan!');
       
-      // Setup scheduler untuk Laporan Harian setiap jam 06:00 Pagi
+      // Setup scheduler untuk Laporan Keuangan Harian setiap jam 06:00 Pagi
       // '0 6 * * *' = Setiap hari jam 06:00
       cron.schedule('0 6 * * *', async () => {
         console.log('⏰ Menjalankan scheduler Laporan Keuangan Harian (06:00 AM)...');
@@ -265,7 +158,7 @@ async function startWhatsAppBot() {
             
           if (error) throw error;
           
-          console.log(`📢 Mengirim laporan ke ${profiles.length} nomor WhatsApp terdaftar...`);
+          console.log(`📢 Mengirim laporan ke ${profiles.length} target...`);
           for (const profile of profiles) {
             await sendDailyReport(sock, profile.whatsapp_number, profile);
           }
@@ -286,8 +179,6 @@ async function startWhatsAppBot() {
     if (!msg.message || msg.key.fromMe) return;
 
     const fromJid = msg.key.remoteJid;
-    
-    // Abaikan jika status broadcast
     if (fromJid === 'status@broadcast') return;
 
     const isGroup = fromJid.endsWith('@g.us');
@@ -300,320 +191,79 @@ async function startWhatsAppBot() {
     const textTrimmed = msgText.trim().toLowerCase();
     if (!textTrimmed) return;
 
-    // ==========================================
-    // LOGIKA KHUSUS GRUP WHATSAPP
-    // ==========================================
+    // Ambil nomor pengirim pesan
+    let cleanNumber = '';
+    let participantJid = '';
     if (isGroup) {
-      const participantJid = msg.key.participant || msg.participant || '';
-      const cleanNumber = participantJid.split('@')[0];
-      if (!cleanNumber) return;
-
-      try {
-        // Cari profile pengirim berdasarkan nomor WA
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('whatsapp_number', cleanNumber)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error fetching profile in group:', error);
-          return;
-        }
-
-        // Perintah tautkan grup (boleh dipicu dari grup mana saja oleh user terdaftar)
-        if (textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup') {
-          if (!profile) {
-            await sock.sendMessage(fromJid, { 
-              text: `@${cleanNumber}, nomor WhatsApp Anda belum terdaftar di aplikasi *Annida2Finance*. Silakan masuk ke web app -> Menu Pengaturan untuk mendaftarkannya terlebih dahulu.`,
-              mentions: [participantJid]
-            });
-            return;
-          }
-
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ whatsapp_group_id: fromJid })
-            .eq('id', profile.id);
-
-          if (updateError) throw updateError;
-
-          await sock.sendMessage(fromJid, {
-            text: `✅ *Grup Berhasil Ditautkan!*
-            
-Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dikirim ke grup ini setiap pagi pukul 06:00.`,
-            mentions: [participantJid]
-          });
-          return;
-        }
-
-        // ABAIKAN jika nomor pengirim belum terdaftar ATAU grup ini bukan grup yang ditautkan untuk user tersebut
-        if (!profile || profile.whatsapp_group_id !== fromJid) {
-          return; 
-        }
-
-        // Perintah lepas tautan grup
-        if (textTrimmed === '/unlinkgrup') {
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ whatsapp_group_id: null })
-            .eq('id', profile.id);
-
-          if (updateError) throw updateError;
-
-          await sock.sendMessage(fromJid, {
-            text: `❌ *Grup Berhasil Dilepas!*
-            
-Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi dikirim ke grup ini.`,
-            mentions: [participantJid]
-          });
-          return;
-        }
-
-        // Perintah dalam grup (harus menggunakan prefix / atau !)
-        if (textTrimmed === '/saldo' || textTrimmed === '!saldo' || textTrimmed === '/cek' || textTrimmed === '!cek') {
-          const summary = await getMonthlySummary(profile.id);
-          const balanceMessage = `📊 *Ringkasan Keuangan Bulan Ini* 📊
-Akun: *${profile.full_name || 'User'}*
-
-🟢 Pemasukan: *${formatRupiah(summary.income)}*
-🔴 Pengeluaran: *${formatRupiah(summary.expense)}*
-━━━━━━━━━━━━━━━━━━
-💵 Saldo Sisa: *${formatRupiah(summary.balance)}*`;
-
-          await sock.sendMessage(fromJid, { text: balanceMessage });
-          return;
-        }
-
-        if (textTrimmed === '/kategori' || textTrimmed === '!kategori') {
-          const { data: categories } = await supabase
-            .from('categories')
-            .select('name, type, icon')
-            .eq('user_id', profile.id);
-
-          if (!categories || categories.length === 0) return;
-
-          const incomeCats = categories.filter(c => c.type === 'income').map(c => `${c.icon} ${c.name}`).join('\n');
-          const expenseCats = categories.filter(c => c.type === 'expense').map(c => `${c.icon} ${c.name}`).join('\n');
-
-          const catMessage = `📋 *Daftar Kategori ${profile.full_name || 'User'}*
-
-🟢 *Pemasukan:*
-${incomeCats || '-'}
-
-🔴 *Pengeluaran:*
-${expenseCats || '-'}`;
-
-          await sock.sendMessage(fromJid, { text: catMessage });
-          return;
-        }
-
-        if (textTrimmed === '/test-report' || textTrimmed === '!test-report') {
-          await sock.sendMessage(fromJid, { text: '⏳ Sedang menyiapkan laporan keuangan pagi Anda...' });
-          await sendDailyReport(sock, cleanNumber, profile);
-          return;
-        }
-
-        // Coba parsing pesan grup sebagai transaksi baru
-        const transactionData = await parseTransactionMessage(msgText, profile.id);
-        if (transactionData) {
-          const { data, error: insertError } = await supabase
-            .from('transactions')
-            .insert({
-              user_id: profile.id,
-              category_id: transactionData.category_id,
-              amount: transactionData.amount,
-              type: transactionData.type,
-              description: transactionData.description,
-              date: new Date().toISOString().split('T')[0]
-            })
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error('Error inserting transaction from group:', insertError);
-            return;
-          }
-
-          const typeLabel = transactionData.type === 'income' ? '🟢 PEMASUKAN' : '🔴 PENGELUARAN';
-          const successMessage = `✅ *Transaksi Berhasil Dicatat!*
-
-Tipe: *${typeLabel}*
-Kategori: *${transactionData.category_icon} ${transactionData.category_name}*
-Jumlah: *${formatRupiah(transactionData.amount)}*
-Keterangan: _"${transactionData.description}"_
-Tanggal: *${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}*
-
-Transaksi telah ditambahkan ke akun *${profile.full_name || 'User'}*.`;
-
-          await sock.sendMessage(fromJid, { 
-            text: successMessage,
-            mentions: [participantJid]
-          });
-        }
-      } catch (err) {
-        console.error('❌ Gagal memproses pesan grup:', err);
-      }
-      return; // Selesai memproses pesan grup
+      participantJid = msg.key.participant || msg.participant || '';
+      cleanNumber = participantJid.split('@')[0];
+    } else {
+      cleanNumber = fromJid.split('@')[0];
     }
 
-    // ==========================================
-    // LOGIKA CHAT PRIBADI (JID PERORANGAN)
-    // ==========================================
-    const cleanNumber = fromJid.split('@')[0];
     if (!cleanNumber) return;
 
-    console.log(`💬 Pesan masuk dari ${cleanNumber}: "${msgText}"`);
-
     try {
-      // 1. Cari profile pengguna berdasarkan nomor WhatsApp
+      // Cari profile pengguna berdasarkan nomor WhatsApp
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('whatsapp_number', cleanNumber)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
+      if (error || !profile) return; // Jika tidak terdaftar, diam saja
 
-      // Jika nomor WhatsApp tidak terdaftar di database
-      if (!profile) {
-        await sock.sendMessage(fromJid, { 
-          text: `Halo! Nomor WhatsApp Anda (*${cleanNumber}*) belum terdaftar di aplikasi *Annida2Finance*.
+      // Perintah: Tautkan Grup (bisa dari grup mana saja)
+      if (isGroup && (textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup')) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ whatsapp_group_id: fromJid })
+          .eq('id', profile.id);
 
-Silakan ikuti langkah berikut:
-1. Buka website *Annida2Finance*.
-2. Masuk ke halaman *Pengaturan*.
-3. Masukkan nomor WhatsApp Anda pada kolom yang disediakan dan klik *Simpan*.
-4. Setelah itu, silakan kirim ulang pesan ke bot ini.` 
+        if (updateError) throw updateError;
+
+        await sock.sendMessage(fromJid, {
+          text: `✅ *Grup Berhasil Ditautkan!*
+          
+Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dikirim ke grup ini setiap pagi pukul 06:00.`,
+          mentions: [participantJid]
         });
         return;
       }
 
-      // 2. Tangani Perintah Khusus (help, saldo, kategori, test-report)
-      if (textTrimmed === 'help' || textTrimmed === 'menu' || textTrimmed === 'bantuan' || textTrimmed === 'halo' || textTrimmed === 'hi') {
-        const helloName = profile.full_name || 'Pengguna';
-        const helpMessage = `Halo *${helloName}*! 👋 Selamat datang di bot asisten *Annida2Finance*.
+      // Pastikan pesan dikirim di grup yang benar (jika grup) atau di chat pribadi
+      if (isGroup && profile.whatsapp_group_id !== fromJid) {
+        return; // Abaikan grup lain
+      }
 
-Berikut adalah format pesan untuk mencatat transaksi Anda:
+      // Perintah: Lepas Tautan Grup
+      if (isGroup && textTrimmed === '/unlinkgrup') {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ whatsapp_group_id: null })
+          .eq('id', profile.id);
 
-*1. Catat Pengeluaran (Default)*
-Format: \`[Nama Kategori] [Jumlah] [Keterangan]\`
-Contoh: \`Makanan 15000 nasi uduk di warung\`
-Contoh: \`Transport 20000 bensin motor\`
+        if (updateError) throw updateError;
 
-*2. Catat Pemasukan*
-Format: \`[Nama Kategori] [Jumlah] [Keterangan]\` (pastikan kategori terdaftar sebagai tipe Pemasukan)
-Contoh: \`Gaji 2500000 transfer bulanan\`
-Contoh: \`Freelance 500000 jasa pembuatan web\`
-
-*3. Cek Ringkasan Keuangan*
-Ketik: \`saldo\` atau \`cek\`
-
-*4. Lihat Kategori Anda*
-Ketik: \`kategori\`
-
-*5. Uji Coba Laporan Pagi*
-Ketik: \`test-report\` (laporan harian jam 6 pagi akan dikirim langsung)`;
-
-        await sock.sendMessage(fromJid, { text: helpMessage });
+        await sock.sendMessage(fromJid, {
+          text: `❌ *Grup Berhasil Dilepas!*
+          
+Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi dikirim ke grup ini.`,
+          mentions: [participantJid]
+        });
         return;
       }
 
-      if (textTrimmed === 'saldo' || textTrimmed === 'cek') {
-        const summary = await getMonthlySummary(profile.id);
-        const balanceMessage = `📊 *Ringkasan Keuangan Bulan Ini* 📊
-
-🟢 Pemasukan: *${formatRupiah(summary.income)}*
-🔴 Pengeluaran: *${formatRupiah(summary.expense)}*
-━━━━━━━━━━━━━━━━━━
-💵 Saldo Sisa: *${formatRupiah(summary.balance)}*`;
-
-        await sock.sendMessage(fromJid, { text: balanceMessage });
-        return;
-      }
-
-      if (textTrimmed === 'kategori') {
-        const { data: categories } = await supabase
-          .from('categories')
-          .select('name, type, icon')
-          .eq('user_id', profile.id);
-
-        if (!categories || categories.length === 0) {
-          await sock.sendMessage(fromJid, { text: 'Anda belum memiliki kategori keuangan di akun Anda.' });
-          return;
-        }
-
-        const incomeCats = categories.filter(c => c.type === 'income').map(c => `${c.icon} ${c.name}`).join('\n');
-        const expenseCats = categories.filter(c => c.type === 'expense').map(c => `${c.icon} ${c.name}`).join('\n');
-
-        const catMessage = `📋 *Daftar Kategori Anda*
-
-🟢 *Pemasukan:*
-${incomeCats || '-'}
-
-🔴 *Pengeluaran:*
-${expenseCats || '-'}`;
-
-        await sock.sendMessage(fromJid, { text: catMessage });
-        return;
-      }
-
-      if (textTrimmed === 'test-report') {
-        await sock.sendMessage(fromJid, { text: '⏳ Sedang menyiapkan laporan keuangan pagi Anda...' });
+      // Perintah: Kirim Laporan Keuangan Secara Instan (Manual)
+      if (textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan') {
+        // Beri feedback di chat tempat dia memicu perintah (bisa pribadi atau grup)
+        await sock.sendMessage(fromJid, { text: '⏳ Sedang mengirimkan laporan keuangan...' });
         await sendDailyReport(sock, cleanNumber, profile);
         return;
       }
 
-      // 3. Coba parsing pesan sebagai transaksi baru
-      const transactionData = await parseTransactionMessage(msgText, profile.id);
-
-      if (transactionData) {
-        // Insert transaction ke database Supabase
-        const { data, error: insertError } = await supabase
-          .from('transactions')
-          .insert({
-            user_id: profile.id,
-            category_id: transactionData.category_id,
-            amount: transactionData.amount,
-            type: transactionData.type,
-            description: transactionData.description,
-            date: new Date().toISOString().split('T')[0] // Hari ini
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          throw insertError;
-        }
-
-        const typeLabel = transactionData.type === 'income' ? '🟢 PEMASUKAN' : '🔴 PENGELUARAN';
-        const successMessage = `✅ *Transaksi Berhasil Dicatat!*
-
-Tipe: *${typeLabel}*
-Kategori: *${transactionData.category_icon} ${transactionData.category_name}*
-Jumlah: *${formatRupiah(transactionData.amount)}*
-Keterangan: _"${transactionData.description}"_
-Tanggal: *${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}*
-
-Transaksi telah ditambahkan ke dashboard *Annida2Finance* Anda.`;
-
-        await sock.sendMessage(fromJid, { text: successMessage });
-      } else {
-        // Jika pesan tidak berupa perintah dan gagal diparsing sebagai transaksi
-        await sock.sendMessage(fromJid, { 
-          text: `Maaf, format pesan tidak dikenali atau nominal uang tidak ditemukan.
-
-Ketik *help* untuk melihat format penulisan pencatatan transaksi yang benar.` 
-        });
-      }
     } catch (err) {
       console.error('❌ Gagal memproses pesan:', err);
-      await sock.sendMessage(fromJid, { 
-        text: `⚠️ Terjadi kesalahan sistem saat memproses pesan Anda. Silakan coba beberapa saat lagi.` 
-      });
     }
   });
 }
