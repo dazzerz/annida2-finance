@@ -103,13 +103,12 @@ async function sendDailyReport(sock, whatsappNumber, profile, customJid = null) 
   try {
     const summary = await getMonthlySummary(profile.id);
     
-    // User requested format:
-    // Pemasukan : 
-    // Pengeluaran : 
-    // saldo sisa : 
-    const reportMessage = `Pemasukan : ${formatRupiah(summary.income)}
-Pengeluaran : ${formatRupiah(summary.expense)}
-saldo sisa : ${formatRupiah(summary.balance)}`;
+    let monthName = new Date().toLocaleString('id-ID', { month: 'long' });
+    monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+    const reportMessage = `Pemasukan (${monthName}) : ${formatRupiah(summary.income)}
+Pengeluaran (${monthName}) : ${formatRupiah(summary.expense)}
+Sisa saldo : ${formatRupiah(summary.balance)}`;
 
     const jid = customJid || profile.whatsapp_group_id || `${whatsappNumber}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: reportMessage });
@@ -324,7 +323,7 @@ async function startWhatsAppBot() {
         await sock.sendMessage(fromJid, {
           text: `✅ *Target Laporan Berhasil Ditautkan!*
           
-Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dikirim ke chat/grup ini setiap pagi pukul 06:00.`,
+Laporan keuangan harian milik *Yayasan Annida Setu* akan otomatis dikirim ke chat/grup ini setiap pagi pukul 06:00.`,
           mentions: [participantJid]
         });
         return;
@@ -347,7 +346,7 @@ Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dik
         await sock.sendMessage(fromJid, {
           text: `❌ *Target Laporan Berhasil Dilepas!*
           
-Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi dikirim ke chat/grup ini.`,
+Laporan keuangan harian milik *Yayasan Annida Setu* tidak akan lagi dikirim ke chat/grup ini.`,
           mentions: [participantJid]
         });
         return;
