@@ -229,6 +229,7 @@ async function startWhatsAppBot() {
   // Listen to incoming messages
   sock.ev.on('messages.upsert', async (m) => {
     const msg = m.messages[0];
+    console.log(`[DEBUG-RAW] Event messages.upsert | fromMe: ${msg?.key?.fromMe} | remoteJid: ${msg?.key?.remoteJid} | text: ${msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || ''}`);
     if (!msg.message) return;
 
     // Abaikan semua pesan jika bot belum siap (sedang menyinkronkan pesan lama di 5 detik pertama)
