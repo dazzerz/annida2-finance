@@ -19,6 +19,9 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || SUPABASE_SERVICE_ROLE_KEY ===
 // Initialize Supabase Client (bypassing RLS with Service Role Key)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// Global cache to map WhatsApp LID (privacy JID) to Phone Number (PN)
+const lidToPnMap = new Map();
+
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
   return new Intl.NumberFormat('id-ID', {
@@ -173,6 +176,27 @@ async function startWhatsAppBot() {
   // Save session credentials
   sock.ev.on('creds.update', saveCreds);
 
+  // Sync and map contacts (especially LIDs to Phone Numbers)
+  sock.ev.on('contacts.upsert', (contacts) => {
+    for (const contact of contacts) {
+      const jid = contact.id || '';
+      const pn = contact.phoneNumber || (contact.id && contact.id.includes('@s.whatsapp.net') ? contact.id.split('@')[0] : '');
+      if (jid && pn) {
+        lidToPnMap.set(jid.split('@')[0], pn.split('@')[0]);
+      }
+    }
+  });
+
+  sock.ev.on('contacts.update', (updates) => {
+    for (const update of updates) {
+      const jid = update.id || '';
+      const pn = update.phoneNumber || (update.id && update.id.includes('@s.whatsapp.net') ? update.id.split('@')[0] : '');
+      if (jid && pn) {
+        lidToPnMap.set(jid.split('@')[0], pn.split('@')[0]);
+      }
+    }
+  });
+
   // Listen to incoming messages
   sock.ev.on('messages.upsert', async (m) => {
     const msg = m.messages[0];
@@ -217,6 +241,22 @@ async function startWhatsAppBot() {
       cleanNumber = participantJid.split('@')[0];
     } else {
       cleanNumber = fromJid.split('@')[0];
+    }
+
+    // Resolve LID to Phone Number using altJid or contactMap
+    const senderJid = participantJid || fromJid;
+    if (cleanNumber && senderJid.endsWith('@lid')) {
+      const lidClean = cleanNumber;
+      if (lidToPnMap.has(lidClean)) {
+        cleanNumber = lidToPnMap.get(lidClean);
+        console.log(`[DEBUG] Resolved LID JID ${senderJid} to Phone Number JID ${cleanNumber}@s.whatsapp.net via contact map.`);
+      } else {
+        const altJid = msg.key.remoteJidAlt || msg.key.participantAlt || msg.senderPn || msg.participantAlt || msg.remoteJidAlt || '';
+        if (altJid && altJid.includes('@s.whatsapp.net')) {
+          cleanNumber = altJid.split('@')[0];
+          console.log(`[DEBUG] Resolved LID JID ${senderJid} to Phone Number JID ${cleanNumber}@s.whatsapp.net via alt fields.`);
+        }
+      }
     }
 
     console.log(`\n[DEBUG] Pesan Masuk: "${msgText}" | Dari JID: ${fromJid} | Pengirim JID: ${participantJid || fromJid} | Clean Number: ${cleanNumber} | isFromMe: ${isFromMe}`);
