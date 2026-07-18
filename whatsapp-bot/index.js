@@ -32,6 +32,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Global cache to map WhatsApp LID (privacy JID) to Phone Number (PN)
 const lidToPnMap = new Map();
 
+// Timestamp when the bot successfully established open connection
+let botStartupTime = 0;
+
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
   return new Intl.NumberFormat('id-ID', {
@@ -166,6 +169,7 @@ async function startWhatsAppBot() {
         console.log('❌ Anda telah keluar dari sesi WhatsApp. Silakan hapus folder "auth_info" dan jalankan ulang bot untuk login.');
       }
     } else if (connection === 'open') {
+      botStartupTime = Math.floor(Date.now() / 1000);
       console.log('✅ Bot WhatsApp berhasil tersambung dan siap digunakan!');
       
       // Setup scheduler untuk Laporan Keuangan Harian setiap jam 06:00 Pagi
@@ -221,10 +225,9 @@ async function startWhatsAppBot() {
     const msg = m.messages[0];
     if (!msg.message) return;
 
-    // Abaikan pesan offline/sinkronisasi lama saat pertama kali terkoneksi
+    // Abaikan pesan offline/sinkronisasi lama yang dikirim sebelum bot online
     const msgTime = Number(msg.messageTimestamp || 0);
-    const nowTime = Math.floor(Date.now() / 1000);
-    if (msgTime && (nowTime - msgTime) > 30) {
+    if (msgTime && botStartupTime && msgTime < botStartupTime) {
       return; 
     }
 
