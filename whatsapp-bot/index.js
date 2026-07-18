@@ -106,7 +106,8 @@ async function sendDailyReport(sock, whatsappNumber, profile, customJid = null) 
     let monthName = new Date().toLocaleString('id-ID', { month: 'long' });
     monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
-    const reportMessage = `Pemasukan (${monthName}) : ${formatRupiah(summary.income)}
+    const reportMessage = `Rekap Keuangan SMP Annida Al Islamy Setu
+Pemasukan (${monthName}) : ${formatRupiah(summary.income)}
 Pengeluaran (${monthName}) : ${formatRupiah(summary.expense)}
 Sisa saldo : ${formatRupiah(summary.balance)}`;
 
