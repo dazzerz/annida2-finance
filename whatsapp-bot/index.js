@@ -1,15 +1,12 @@
 import dotenv from 'dotenv';
-import pkgBaileys from '@whiskeysockets/baileys';
-import pkgPino from 'pino';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 
 // Load environment variables
 dotenv.config();
-
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = pkgBaileys;
-const pino = pkgPino;
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
