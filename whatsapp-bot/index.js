@@ -187,6 +187,7 @@ async function sendDailyReport(sock, whatsappNumber, profile) {
     });
     
     const reportMessage = `☀️ *Laporan Keuangan Pagi* ☀️
+Nama Akun: *${profile.full_name || 'Pengguna'}*
 Tanggal: ${todayStr}
 
 Pemasukan : ${formatRupiah(summary.income)}
@@ -195,9 +196,9 @@ Saldo sisa : ${formatRupiah(summary.balance)}
 
 Semangat beraktivitas hari ini! 💪`;
 
-    const jid = `${whatsappNumber}@s.whatsapp.net`;
+    const jid = profile.whatsapp_group_id || `${whatsappNumber}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: reportMessage });
-    console.log(`✉️ Laporan harian berhasil dikirim ke ${whatsappNumber} (${profile.full_name || 'User'})`);
+    console.log(`✉️ Laporan harian berhasil dikirim ke ${jid} (${profile.full_name || 'User'})`);
   } catch (err) {
     console.error(`❌ Gagal mengirim laporan harian ke ${whatsappNumber}:`, err);
   }
@@ -286,11 +287,10 @@ async function startWhatsAppBot() {
 
     const fromJid = msg.key.remoteJid;
     
-    // Abaikan jika pesan dari grup atau status broadcast
-    if (fromJid.endsWith('@g.us') || fromJid === 'status@broadcast') return;
+    // Abaikan jika status broadcast
+    if (fromJid === 'status@broadcast') return;
 
-    // Bersihkan nomor WhatsApp pengirim (misal: 628123456789@s.whatsapp.net -> 628123456789)
-    const cleanNumber = fromJid.split('@')[0];
+    const isGroup = fromJid.endsWith('@g.us');
     
     // Ambil isi teks pesan
     const msgText = msg.message.conversation || 
@@ -300,10 +300,27 @@ async function startWhatsAppBot() {
     const textTrimmed = msgText.trim().toLowerCase();
     if (!textTrimmed) return;
 
-    console.log(`💬 Pesan masuk dari ${cleanNumber}: "${msgText}"`);
+    // Jika pesan dari grup, pastikan hanya memproses perintah /setgrup atau /unlinkgrup
+    if (isGroup && !textTrimmed.startsWith('/setgrup') && !textTrimmed.startsWith('!setgrup') && !textTrimmed.startsWith('/unlinkgrup')) {
+      return; // Abaikan semua chat grup lainnya
+    }
+
+    // Ambil nomor pengirim pesan (pesan pribadi atau pengirim di grup)
+    let cleanNumber = '';
+    let participantJid = '';
+    if (isGroup) {
+      participantJid = msg.key.participant || msg.participant || '';
+      cleanNumber = participantJid.split('@')[0];
+    } else {
+      cleanNumber = fromJid.split('@')[0];
+    }
+
+    if (!cleanNumber) return;
+
+    console.log(`💬 Pesan masuk dari ${cleanNumber}${isGroup ? ' (di Grup)' : ''}: "${msgText}"`);
 
     try {
-      // 1. Cari profile pengguna berdasarkan nomor WhatsApp
+      // 1. Cari profile pengguna berdasarkan nomor WhatsApp pengirim
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -315,7 +332,53 @@ async function startWhatsAppBot() {
         return;
       }
 
-      // Jika nomor WhatsApp tidak terdaftar di database
+      // Jika di grup dan nomor pengirim belum terdaftar
+      if (isGroup && !profile) {
+        await sock.sendMessage(fromJid, { 
+          text: `@${cleanNumber}, nomor WhatsApp Anda belum terdaftar di aplikasi *Annida2Finance*. Silakan masuk ke web app -> Menu Pengaturan untuk mendaftarkannya terlebih dahulu.`,
+          mentions: [participantJid]
+        });
+        return;
+      }
+
+      // Tangani perintah grup khusus (/setgrup dan /unlinkgrup)
+      if (isGroup && profile) {
+        if (textTrimmed.startsWith('/setgrup') || textTrimmed.startsWith('!setgrup')) {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ whatsapp_group_id: fromJid })
+            .eq('id', profile.id);
+
+          if (updateError) throw updateError;
+
+          await sock.sendMessage(fromJid, {
+            text: `✅ *Grup Berhasil Ditautkan!*
+            
+Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dikirim ke grup ini setiap pagi pukul 06:00.`,
+            mentions: [participantJid]
+          });
+          return;
+        }
+
+        if (textTrimmed.startsWith('/unlinkgrup')) {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ whatsapp_group_id: null })
+            .eq('id', profile.id);
+
+          if (updateError) throw updateError;
+
+          await sock.sendMessage(fromJid, {
+            text: `❌ *Grup Berhasil Dilepas!*
+            
+Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi dikirim ke grup ini.`,
+            mentions: [participantJid]
+          });
+          return;
+        }
+      }
+
+      // Jika nomor WhatsApp tidak terdaftar di database (untuk chat pribadi)
       if (!profile) {
         await sock.sendMessage(fromJid, { 
           text: `Halo! Nomor WhatsApp Anda (*${cleanNumber}*) belum terdaftar di aplikasi *Annida2Finance*.

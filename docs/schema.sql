@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   avatar_url TEXT,
   currency TEXT DEFAULT 'IDR',
   whatsapp_number TEXT UNIQUE,
+  whatsapp_group_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
