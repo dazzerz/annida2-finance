@@ -354,8 +354,6 @@ Laporan keuangan harian milik *Yayasan Annida Setu* tidak akan lagi dikirim ke c
 
       // Perintah: Kirim Laporan Keuangan Secara Instan (Manual)
       if (textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan') {
-        // Beri feedback di chat tempat dia memicu perintah (bisa pribadi atau grup)
-        await sock.sendMessage(fromJid, { text: '⏳ Sedang mengirimkan laporan keuangan...' });
         await sendDailyReport(sock, cleanNumber, profile, fromJid);
         return;
       }
