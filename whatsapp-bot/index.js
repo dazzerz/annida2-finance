@@ -36,6 +36,9 @@ const lidToPnMap = new Map();
 let botConnectedAt = 0;
 let isReady = false;
 
+// Set untuk tracking pesan yang sudah diproses (mencegah duplikasi)
+const processedMsgIds = new Set();
+
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
   return new Intl.NumberFormat('id-ID', {
@@ -259,9 +262,13 @@ async function startWhatsAppBot() {
     if (!isReady) return;
 
     // Abaikan pesan lama yang dikirim SEBELUM bot terhubung (mencegah replay pesan historis)
-    const msgTimestamp = Number(msg.messageTimestamp);
+    const msgTimestamp = msg.messageTimestamp?.toNumber?.() || Number(msg.messageTimestamp) || 0;
     if (msgTimestamp && botConnectedAt && msgTimestamp < botConnectedAt) return;
 
+    // Abaikan pesan yang sudah pernah diproses (mencegah duplikasi event dari Baileys)
+    const msgId = msg.key.id;
+    if (msgId && processedMsgIds.has(msgId)) return;
+    if (msgId) processedMsgIds.add(msgId);
     const fromJid = msg.key.remoteJid;
     if (fromJid === 'status@broadcast') return;
 
