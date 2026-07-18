@@ -47,35 +47,39 @@ function getCurrentMonthRange() {
   };
 }
 
-// Function to fetch monthly summary for a user
+// Function to fetch monthly summary and overall balance for a user
 async function getMonthlySummary(userId) {
-  const { start, end } = getCurrentMonthRange();
-  
   const { data: txs, error } = await supabase
     .from('transactions')
-    .select('amount, type')
-    .eq('user_id', userId)
-    .gte('date', start)
-    .lte('date', end);
+    .select('amount, type, date')
+    .eq('user_id', userId);
     
   if (error) throw error;
   
-  let income = 0;
-  let expense = 0;
+  const { start, end } = getCurrentMonthRange();
+  
+  let monthlyIncome = 0;
+  let monthlyExpense = 0;
+  let allTimeIncome = 0;
+  let allTimeExpense = 0;
   
   txs.forEach(tx => {
     const amt = parseFloat(tx.amount);
+    const isCurrentMonth = tx.date >= start && tx.date <= end;
+    
     if (tx.type === 'income') {
-      income += amt;
+      allTimeIncome += amt;
+      if (isCurrentMonth) monthlyIncome += amt;
     } else {
-      expense += amt;
+      allTimeExpense += amt;
+      if (isCurrentMonth) monthlyExpense += amt;
     }
   });
   
   return {
-    income,
-    expense,
-    balance: income - expense
+    income: monthlyIncome,
+    expense: monthlyExpense,
+    balance: allTimeIncome - allTimeExpense
   };
 }
 
@@ -264,16 +268,41 @@ async function startWhatsAppBot() {
     if (!cleanNumber) return;
 
     try {
-      // Cari profile pengguna berdasarkan nomor WhatsApp
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('whatsapp_number', cleanNumber)
-        .maybeSingle();
+      let profile = null;
 
-      console.log(`[DEBUG] Database Lookup -> Error: ${error ? error.message : 'none'} | Profile Ditemukan: ${!!profile} | Data:`, profile);
+      // Jika perintah adalah trigger laporan, cari profil yang menautkan chat/grup ini
+      const isTrigger = textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan';
+      if (isTrigger) {
+        const { data: linkedProfile, error: linkErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('whatsapp_group_id', fromJid)
+          .maybeSingle();
 
-      if (error || !profile) return; // Jika tidak terdaftar, diam saja
+        if (linkedProfile) {
+          profile = linkedProfile;
+          console.log(`[DEBUG] Found linked profile by chat/group JID ${fromJid}: ${profile.full_name}`);
+        }
+      }
+
+      // Jika belum menemukan profil (atau perintahnya adalah /setgrup / /unlinkgrup), cari berdasarkan nomor pengirim
+      if (!profile) {
+        const { data: senderProfile, error: sendErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('whatsapp_number', cleanNumber)
+          .maybeSingle();
+
+        if (senderProfile) {
+          profile = senderProfile;
+          console.log(`[DEBUG] Found profile by sender number ${cleanNumber}: ${profile.full_name}`);
+        }
+      }
+
+      if (!profile) {
+        console.log(`[DEBUG] No profile found matching cleanNumber ${cleanNumber} or chat JID ${fromJid}.`);
+        return; // Jika tidak terdaftar, diam saja
+      }
 
       // Perintah: Tautkan Chat/Grup
       if (textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup') {
