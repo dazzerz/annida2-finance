@@ -176,7 +176,7 @@ async function startWhatsAppBot() {
   // Listen to incoming messages
   sock.ev.on('messages.upsert', async (m) => {
     const msg = m.messages[0];
-    if (!msg.message || msg.key.fromMe) return;
+    if (!msg.message) return;
 
     const fromJid = msg.key.remoteJid;
     if (fromJid === 'status@broadcast') return;
@@ -189,24 +189,38 @@ async function startWhatsAppBot() {
                     '';
                     
     const textTrimmed = msgText.trim().toLowerCase();
-    
+    if (!textTrimmed) return;
+
+    // Cek jika pesan dikirim dari akun bot itu sendiri
+    const isFromMe = msg.key.fromMe;
+    const isCommand = textTrimmed === '/setgrup' || 
+                      textTrimmed === '!setgrup' || 
+                      textTrimmed === 'set grup' ||
+                      textTrimmed === '/unlinkgrup' ||
+                      textTrimmed === '/laporan' ||
+                      textTrimmed === 'test-report' ||
+                      textTrimmed === '/test-report' ||
+                      textTrimmed === 'laporan';
+
+    // Jika pesan dari saya sendiri (fromMe) tapi bukan perintah bot, abaikan
+    if (isFromMe && !isCommand) return;
+
     // Ambil nomor pengirim pesan
     let cleanNumber = '';
     let participantJid = '';
-    if (isGroup) {
+    if (isFromMe) {
+      const myJid = sock.user.id || '';
+      cleanNumber = myJid.split(':')[0].split('@')[0];
+      participantJid = myJid;
+    } else if (isGroup) {
       participantJid = msg.key.participant || msg.participant || '';
       cleanNumber = participantJid.split('@')[0];
     } else {
       cleanNumber = fromJid.split('@')[0];
     }
 
-    console.log(`\n[DEBUG] Pesan Masuk: "${msgText}" | Dari JID: ${fromJid} | Pengirim JID: ${participantJid || fromJid} | Clean Number: ${cleanNumber}`);
-    console.log('[DEBUG] Full Msg object:', JSON.stringify(msg, null, 2));
+    console.log(`\n[DEBUG] Pesan Masuk: "${msgText}" | Dari JID: ${fromJid} | Pengirim JID: ${participantJid || fromJid} | Clean Number: ${cleanNumber} | isFromMe: ${isFromMe}`);
 
-    if (!textTrimmed) {
-      console.log('[DEBUG] Pesan kosong atau tidak didukung, diabaikan.');
-      return;
-    }
     if (!cleanNumber) return;
 
     try {
