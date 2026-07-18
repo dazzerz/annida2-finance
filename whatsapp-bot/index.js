@@ -32,7 +32,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Global cache to map WhatsApp LID (privacy JID) to Phone Number (PN)
 const lidToPnMap = new Map();
 
-// Flag to prevent responding to offline history sync messages on startup
+// Timestamp (detik) saat bot berhasil konek — pesan lebih lama dari ini akan diabaikan
+let botConnectedAt = 0;
 let isReady = false;
 
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
@@ -193,6 +194,7 @@ async function startWhatsAppBot() {
       }
     } else if (connection === 'open') {
       isReady = false;
+      botConnectedAt = Math.floor(Date.now() / 1000); // Simpan waktu koneksi dalam detik
       console.log('✅ Bot WhatsApp berhasil tersambung! Sedang menyinkronkan data...');
       
       // Tunggu 5 detik agar sinkronisasi pesan offline selesai sebelum bot merespon perintah
@@ -255,6 +257,10 @@ async function startWhatsAppBot() {
 
     // Abaikan semua pesan jika bot belum siap (sedang menyinkronkan pesan lama di 5 detik pertama)
     if (!isReady) return;
+
+    // Abaikan pesan lama yang dikirim SEBELUM bot terhubung (mencegah replay pesan historis)
+    const msgTimestamp = Number(msg.messageTimestamp);
+    if (msgTimestamp && botConnectedAt && msgTimestamp < botConnectedAt) return;
 
     const fromJid = msg.key.remoteJid;
     if (fromJid === 'status@broadcast') return;
