@@ -14,6 +14,7 @@
 - [ ] js/supabase.js — Supabase client init
 - [ ] js/auth.js — login, register, logout
 - [ ] js/transactions.js — CRUD transaksi
+
 - [ ] js/budget.js — manajemen budget
 - [ ] js/charts.js — Chart.js grafik
 - [ ] js/reports.js — export PDF
