@@ -32,8 +32,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Global cache to map WhatsApp LID (privacy JID) to Phone Number (PN)
 const lidToPnMap = new Map();
 
-// Timestamp when the bot script was started (defaults to script load time to filter old history immediately)
-let botStartupTime = Math.floor(Date.now() / 1000);
+// Flag to prevent responding to offline history sync messages on startup
+let isReady = false;
 
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
@@ -169,8 +169,14 @@ async function startWhatsAppBot() {
         console.log('❌ Anda telah keluar dari sesi WhatsApp. Silakan hapus folder "auth_info" dan jalankan ulang bot untuk login.');
       }
     } else if (connection === 'open') {
-      botStartupTime = Math.floor(Date.now() / 1000);
-      console.log('✅ Bot WhatsApp berhasil tersambung dan siap digunakan!');
+      isReady = false;
+      console.log('✅ Bot WhatsApp berhasil tersambung! Sedang menyinkronkan data...');
+      
+      // Tunggu 5 detik agar sinkronisasi pesan offline selesai sebelum bot merespon perintah
+      setTimeout(() => {
+        isReady = true;
+        console.log('⚡ Bot siap merespon perintah baru!');
+      }, 5000);
       
       // Setup scheduler untuk Laporan Keuangan Harian setiap jam 06:00 Pagi
       // '0 6 * * *' = Setiap hari jam 06:00
@@ -225,11 +231,8 @@ async function startWhatsAppBot() {
     const msg = m.messages[0];
     if (!msg.message) return;
 
-    // Abaikan pesan offline/sinkronisasi lama yang dikirim sebelum bot online
-    const msgTime = Number(msg.messageTimestamp || 0);
-    if (msgTime && botStartupTime && msgTime < botStartupTime) {
-      return; 
-    }
+    // Abaikan semua pesan jika bot belum siap (sedang menyinkronkan pesan lama di 5 detik pertama)
+    if (!isReady) return;
 
     const fromJid = msg.key.remoteJid;
     if (fromJid === 'status@broadcast') return;
