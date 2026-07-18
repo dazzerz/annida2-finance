@@ -82,9 +82,6 @@ $$;
 -- 3. JADWALKAN PENGIRIMAN (CRON JOB)
 -- ==============================================================================
 
--- Hapus jadwal lama jika ada (untuk reset)
-SELECT cron.unschedule('laporan_keuangan_harian');
-
 -- Buat jadwal baru
 -- 0 23 * * * (Format Cron UTC/GMT). Jam 23:00 GMT = Jam 06:00 WIB besok paginya.
 SELECT cron.schedule(
