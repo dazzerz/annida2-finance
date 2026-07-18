@@ -232,7 +232,10 @@ async function startWhatsAppBot() {
     if (!msg.message) return;
 
     // Abaikan semua pesan jika bot belum siap (sedang menyinkronkan pesan lama di 5 detik pertama)
-    if (!isReady) return;
+    if (!isReady) {
+      console.log(`[DEBUG] Pesan diabaikan (bot belum siap): "${msg.message?.conversation || ''}"`);
+      return;
+    }
 
     const fromJid = msg.key.remoteJid;
     if (fromJid === 'status@broadcast') return;
@@ -294,8 +297,9 @@ async function startWhatsAppBot() {
     try {
       let profile = null;
 
-      // Jika perintah adalah trigger laporan, cari profil yang menautkan chat/grup ini
       const isTrigger = textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan';
+      console.log(`[DEBUG] Menerima Perintah: "${textTrimmed}" | isTrigger: ${isTrigger} | fromJid: "${fromJid}"`);
+
       if (isTrigger) {
         const { data: linkedProfile, error: linkErr } = await supabase
           .from('profiles')
@@ -303,8 +307,12 @@ async function startWhatsAppBot() {
           .eq('whatsapp_group_id', fromJid)
           .maybeSingle();
 
+        if (linkErr) console.error('[DEBUG] Error linkedProfile query:', linkErr);
         if (linkedProfile) {
           profile = linkedProfile;
+          console.log('[DEBUG] Profil ditemukan via whatsapp_group_id:', profile.full_name);
+        } else {
+          console.log('[DEBUG] Profil TIDAK ditemukan via whatsapp_group_id');
         }
       }
 
@@ -316,12 +324,17 @@ async function startWhatsAppBot() {
           .eq('whatsapp_number', cleanNumber)
           .maybeSingle();
 
+        if (sendErr) console.error('[DEBUG] Error senderProfile query:', sendErr);
         if (senderProfile) {
           profile = senderProfile;
+          console.log('[DEBUG] Profil ditemukan via whatsapp_number:', profile.full_name);
+        } else {
+          console.log('[DEBUG] Profil TIDAK ditemukan via whatsapp_number');
         }
       }
 
       if (!profile) {
+        console.log(`[DEBUG] Mengabaikan perintah karena profile tidak ditemukan untuk dariJid: "${fromJid}" atau nomor: "${cleanNumber}"`);
         return; // Jika tidak terdaftar, diam saja
       }
 
