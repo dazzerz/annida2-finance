@@ -101,8 +101,8 @@ async function getMonthlySummary(userId) {
   };
 }
 
-// Function to generate and send daily report to a user's group or private chat
-async function sendDailyReport(sock, whatsappNumber, profile, customJid = null) {
+// Function to generate and send report to a specific JID
+async function sendReportToJid(sock, jid, profile) {
   try {
     const summary = await getMonthlySummary(profile.id);
     
@@ -114,11 +114,34 @@ Pemasukan (${monthName}) : ${formatRupiah(summary.income)}
 Pengeluaran (${monthName}) : ${formatRupiah(summary.expense)}
 Sisa saldo : ${formatRupiah(summary.balance)}`;
 
-    const jid = customJid || profile.whatsapp_group_id || `${whatsappNumber}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: reportMessage });
-    console.log(`✉️ Laporan keuangan berhasil dikirim ke ${jid} (Akun: ${profile.full_name || 'User'})`);
+    console.log(`✉️  Laporan berhasil dikirim ke ${jid} (Akun: ${profile.full_name || 'User'})`);
   } catch (err) {
-    console.error(`❌ Gagal mengirim laporan keuangan ke ${whatsappNumber}:`, err);
+    console.error(`❌ Gagal mengirim laporan ke ${jid}:`, err);
+  }
+}
+
+// Function to send daily report to ALL targets of a profile
+async function sendDailyReport(sock, profile) {
+  const targets = profile.whatsapp_targets || [];
+
+  // Fallback ke whatsapp_group_id lama jika targets kosong
+  if (targets.length === 0 && profile.whatsapp_group_id) {
+    targets.push(profile.whatsapp_group_id);
+  }
+
+  // Fallback ke nomor pribadi jika masih kosong
+  if (targets.length === 0 && profile.whatsapp_number) {
+    targets.push(`${profile.whatsapp_number}@s.whatsapp.net`);
+  }
+
+  if (targets.length === 0) {
+    console.log(`⚠️  Profil "${profile.full_name}" tidak memiliki target penerima, lewati.`);
+    return;
+  }
+
+  for (const jid of targets) {
+    await sendReportToJid(sock, jid, profile);
   }
 }
 
@@ -179,7 +202,6 @@ async function startWhatsAppBot() {
       }, 5000);
       
       // Setup scheduler untuk Laporan Keuangan Harian setiap jam 06:00 Pagi
-      // '0 6 * * *' = Setiap hari jam 06:00
       cron.schedule('0 6 * * *', async () => {
         console.log('⏰ Menjalankan scheduler Laporan Keuangan Harian (06:00 AM)...');
         try {
@@ -190,15 +212,15 @@ async function startWhatsAppBot() {
             
           if (error) throw error;
           
-          console.log(`📢 Mengirim laporan ke ${profiles.length} target...`);
+          console.log(`📢 Mengirim laporan ke ${profiles.length} profil...`);
           for (const profile of profiles) {
-            await sendDailyReport(sock, profile.whatsapp_number, profile);
+            await sendDailyReport(sock, profile);
           }
         } catch (err) {
           console.error('❌ Gagal menjalankan scheduler laporan harian:', err);
         }
-      });
-      console.log('📅 Scheduler laporan keuangan harian jam 06:00 pagi aktif.');
+      }, { timezone: 'Asia/Jakarta' });
+      console.log('📅 Scheduler laporan keuangan harian jam 06:00 pagi (WIB) aktif.');
     }
   });
 
@@ -294,82 +316,117 @@ async function startWhatsAppBot() {
     try {
       let profile = null;
 
-      // Jika perintah adalah trigger laporan, cari profil yang menautkan chat/grup ini
       const isTrigger = textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan';
+      const isSetGrup = textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup';
+      const isUnlinkGrup = textTrimmed === '/unlinkgrup';
 
       if (isTrigger) {
-        const { data: linkedProfile, error: linkErr } = await supabase
+        // Cari profil yang memiliki fromJid di dalam array whatsapp_targets
+        const { data: allProfiles, error: fetchErr } = await supabase
           .from('profiles')
           .select('*')
-          .eq('whatsapp_group_id', fromJid)
-          .maybeSingle();
+          .not('whatsapp_targets', 'is', null);
 
-        if (linkedProfile) {
-          profile = linkedProfile;
+        if (!fetchErr && allProfiles) {
+          profile = allProfiles.find(p => (p.whatsapp_targets || []).includes(fromJid)) || null;
+        }
+
+        // Fallback: cek whatsapp_group_id lama
+        if (!profile) {
+          const { data: legacyProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('whatsapp_group_id', fromJid)
+            .maybeSingle();
+          if (legacyProfile) profile = legacyProfile;
         }
       }
 
-      // Jika belum menemukan profil (karena perintahnya adalah /setgrup / /unlinkgrup), cari berdasarkan nomor pengirim
-      if (!profile && !isTrigger) {
-        const { data: senderProfile, error: sendErr } = await supabase
+      // Untuk /setgrup dan /unlinkgrup, cari profil berdasarkan nomor pengirim
+      if (!profile && (isSetGrup || isUnlinkGrup)) {
+        const { data: senderProfile } = await supabase
           .from('profiles')
           .select('*')
           .eq('whatsapp_number', cleanNumber)
           .maybeSingle();
 
-        if (senderProfile) {
-          profile = senderProfile;
-        }
+        if (senderProfile) profile = senderProfile;
       }
 
       if (!profile) {
         return; // Jika tidak terdaftar, diam saja
       }
 
-      // Perintah: Tautkan Chat/Grup
-      if (textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup') {
+      // ── Perintah: Tambahkan Chat/Grup ke daftar penerima ──
+      if (isSetGrup) {
+        const currentTargets = profile.whatsapp_targets || [];
+
+        if (currentTargets.includes(fromJid)) {
+          // Sudah terdaftar
+          const sentMsg = await sock.sendMessage(fromJid, {
+            text: `ℹ️ Chat/grup ini sudah terdaftar sebagai penerima laporan keuangan *Yayasan Annida Setu*.`,
+            mentions: [participantJid]
+          });
+          // Auto-hapus pesan konfirmasi setelah 5 detik
+          setTimeout(async () => {
+            try { await sock.sendMessage(fromJid, { delete: sentMsg.key }); } catch (_) {}
+          }, 5000);
+          return;
+        }
+
+        const newTargets = [...currentTargets, fromJid];
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ whatsapp_group_id: fromJid })
+          .update({ whatsapp_targets: newTargets, whatsapp_group_id: fromJid })
           .eq('id', profile.id);
 
         if (updateError) throw updateError;
 
-        await sock.sendMessage(fromJid, {
-          text: `✅ *Target Laporan Berhasil Ditautkan!*
-          
-Laporan keuangan harian milik *Yayasan Annida Setu* akan otomatis dikirim ke chat/grup ini setiap pagi pukul 06:00.`,
+        const sentMsg = await sock.sendMessage(fromJid, {
+          text: `✅ *Berhasil Ditambahkan!*\n\nChat/grup ini akan menerima laporan keuangan harian *Yayasan Annida Setu* setiap pagi pukul 06:00.\n\nTotal penerima aktif: *${newTargets.length}*`,
           mentions: [participantJid]
         });
+        // Auto-hapus pesan konfirmasi setelah 5 detik
+        setTimeout(async () => {
+          try { await sock.sendMessage(fromJid, { delete: sentMsg.key }); } catch (_) {}
+        }, 5000);
         return;
       }
 
-      // Pastikan pesan dikirim di grup yang benar (jika grup) atau di chat pribadi
-      if (isGroup && profile.whatsapp_group_id !== fromJid) {
-        return; // Abaikan grup lain
+      // Pastikan pesan /laporan dikirim di chat yang terdaftar (untuk keamanan)
+      if (isTrigger && isGroup && !(profile.whatsapp_targets || []).includes(fromJid)) {
+        return;
       }
 
-      // Perintah: Lepas Tautan Chat/Grup
-      if (textTrimmed === '/unlinkgrup') {
+      // ── Perintah: Hapus Chat/Grup dari daftar penerima ──
+      if (isUnlinkGrup) {
+        const currentTargets = profile.whatsapp_targets || [];
+        const newTargets = currentTargets.filter(jid => jid !== fromJid);
+
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ whatsapp_group_id: null })
+          .update({
+            whatsapp_targets: newTargets,
+            whatsapp_group_id: newTargets.length > 0 ? newTargets[0] : null
+          })
           .eq('id', profile.id);
 
         if (updateError) throw updateError;
 
-        await sock.sendMessage(fromJid, {
-          text: `❌ *Target Laporan Berhasil Dilepas!*
-          
-Laporan keuangan harian milik *Yayasan Annida Setu* tidak akan lagi dikirim ke chat/grup ini.`,
+        const sentMsg = await sock.sendMessage(fromJid, {
+          text: `❌ *Berhasil Dihapus!*\n\nChat/grup ini tidak akan lagi menerima laporan keuangan *Yayasan Annida Setu*.\n\nSisa penerima aktif: *${newTargets.length}*`,
           mentions: [participantJid]
         });
+        // Auto-hapus pesan konfirmasi setelah 5 detik
+        setTimeout(async () => {
+          try { await sock.sendMessage(fromJid, { delete: sentMsg.key }); } catch (_) {}
+        }, 5000);
         return;
       }
 
-      // Perintah: Kirim Laporan Keuangan Secara Instan (Manual)
-      if (textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan') {
-        await sendDailyReport(sock, cleanNumber, profile, fromJid);
+      // ── Perintah: Kirim Laporan Keuangan Secara Instan (Manual) ──
+      if (isTrigger) {
+        await sendReportToJid(sock, fromJid, profile);
         return;
       }
 
