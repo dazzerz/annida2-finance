@@ -221,6 +221,13 @@ async function startWhatsAppBot() {
     const msg = m.messages[0];
     if (!msg.message) return;
 
+    // Abaikan pesan offline/sinkronisasi lama saat pertama kali terkoneksi
+    const msgTime = Number(msg.messageTimestamp || 0);
+    const nowTime = Math.floor(Date.now() / 1000);
+    if (msgTime && (nowTime - msgTime) > 30) {
+      return; 
+    }
+
     const fromJid = msg.key.remoteJid;
     if (fromJid === 'status@broadcast') return;
 
