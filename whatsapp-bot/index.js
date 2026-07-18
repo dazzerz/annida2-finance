@@ -253,17 +253,13 @@ async function startWhatsAppBot() {
       const lidClean = cleanNumber;
       if (lidToPnMap.has(lidClean)) {
         cleanNumber = lidToPnMap.get(lidClean);
-        console.log(`[DEBUG] Resolved LID JID ${senderJid} to Phone Number JID ${cleanNumber}@s.whatsapp.net via contact map.`);
       } else {
         const altJid = msg.key.remoteJidAlt || msg.key.participantAlt || msg.senderPn || msg.participantAlt || msg.remoteJidAlt || '';
         if (altJid && altJid.includes('@s.whatsapp.net')) {
           cleanNumber = altJid.split('@')[0];
-          console.log(`[DEBUG] Resolved LID JID ${senderJid} to Phone Number JID ${cleanNumber}@s.whatsapp.net via alt fields.`);
         }
       }
     }
-
-    console.log(`\n[DEBUG] Pesan Masuk: "${msgText}" | Dari JID: ${fromJid} | Pengirim JID: ${participantJid || fromJid} | Clean Number: ${cleanNumber} | isFromMe: ${isFromMe}`);
 
     if (!cleanNumber) return;
 
@@ -281,7 +277,6 @@ async function startWhatsAppBot() {
 
         if (linkedProfile) {
           profile = linkedProfile;
-          console.log(`[DEBUG] Found linked profile by chat/group JID ${fromJid}: ${profile.full_name}`);
         }
       }
 
@@ -295,12 +290,10 @@ async function startWhatsAppBot() {
 
         if (senderProfile) {
           profile = senderProfile;
-          console.log(`[DEBUG] Found profile by sender number ${cleanNumber}: ${profile.full_name}`);
         }
       }
 
       if (!profile) {
-        console.log(`[DEBUG] No profile found matching cleanNumber ${cleanNumber} or chat JID ${fromJid}.`);
         return; // Jika tidak terdaftar, diam saja
       }
 
