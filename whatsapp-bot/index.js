@@ -5,6 +5,16 @@ import qrcode from 'qrcode-terminal';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 
+// Override console.error to suppress harmless WhatsApp E2EE sync warnings (like Bad MAC / Failed to decrypt)
+const originalConsoleError = console.error;
+console.error = function (...args) {
+  const msg = args.join(' ');
+  if (msg.includes('Bad MAC') || msg.includes('Failed to decrypt') || msg.includes('libsignal') || msg.includes('SessionCipher')) {
+    return; // Silently suppress decryption warnings
+  }
+  originalConsoleError.apply(console, args);
+};
+
 // Load environment variables
 dotenv.config();
 
