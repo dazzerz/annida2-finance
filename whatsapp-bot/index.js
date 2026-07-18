@@ -32,8 +32,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Global cache to map WhatsApp LID (privacy JID) to Phone Number (PN)
 const lidToPnMap = new Map();
 
-// Timestamp when the bot successfully established open connection
-let botStartupTime = 0;
+// Timestamp when the bot script was started (defaults to script load time to filter old history immediately)
+let botStartupTime = Math.floor(Date.now() / 1000);
 
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
