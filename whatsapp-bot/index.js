@@ -80,7 +80,7 @@ async function getMonthlySummary(userId) {
 }
 
 // Function to generate and send daily report to a user's group or private chat
-async function sendDailyReport(sock, whatsappNumber, profile) {
+async function sendDailyReport(sock, whatsappNumber, profile, customJid = null) {
   try {
     const summary = await getMonthlySummary(profile.id);
     
@@ -92,7 +92,7 @@ async function sendDailyReport(sock, whatsappNumber, profile) {
 Pengeluaran : ${formatRupiah(summary.expense)}
 saldo sisa : ${formatRupiah(summary.balance)}`;
 
-    const jid = profile.whatsapp_group_id || `${whatsappNumber}@s.whatsapp.net`;
+    const jid = customJid || profile.whatsapp_group_id || `${whatsappNumber}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: reportMessage });
     console.log(`✉️ Laporan keuangan berhasil dikirim ke ${jid} (Akun: ${profile.full_name || 'User'})`);
   } catch (err) {
@@ -275,8 +275,8 @@ async function startWhatsAppBot() {
 
       if (error || !profile) return; // Jika tidak terdaftar, diam saja
 
-      // Perintah: Tautkan Grup (bisa dari grup mana saja)
-      if (isGroup && (textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup')) {
+      // Perintah: Tautkan Chat/Grup
+      if (textTrimmed === '/setgrup' || textTrimmed === '!setgrup' || textTrimmed === 'set grup') {
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ whatsapp_group_id: fromJid })
@@ -285,9 +285,9 @@ async function startWhatsAppBot() {
         if (updateError) throw updateError;
 
         await sock.sendMessage(fromJid, {
-          text: `✅ *Grup Berhasil Ditautkan!*
+          text: `✅ *Target Laporan Berhasil Ditautkan!*
           
-Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dikirim ke grup ini setiap pagi pukul 06:00.`,
+Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dikirim ke chat/grup ini setiap pagi pukul 06:00.`,
           mentions: [participantJid]
         });
         return;
@@ -298,8 +298,8 @@ Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dik
         return; // Abaikan grup lain
       }
 
-      // Perintah: Lepas Tautan Grup
-      if (isGroup && textTrimmed === '/unlinkgrup') {
+      // Perintah: Lepas Tautan Chat/Grup
+      if (textTrimmed === '/unlinkgrup') {
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ whatsapp_group_id: null })
@@ -308,9 +308,9 @@ Laporan keuangan harian milik *${profile.full_name || 'User'}* akan otomatis dik
         if (updateError) throw updateError;
 
         await sock.sendMessage(fromJid, {
-          text: `❌ *Grup Berhasil Dilepas!*
+          text: `❌ *Target Laporan Berhasil Dilepas!*
           
-Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi dikirim ke grup ini.`,
+Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi dikirim ke chat/grup ini.`,
           mentions: [participantJid]
         });
         return;
@@ -320,7 +320,7 @@ Laporan keuangan harian milik *${profile.full_name || 'User'}* tidak akan lagi d
       if (textTrimmed === 'test-report' || textTrimmed === '/test-report' || textTrimmed === 'laporan' || textTrimmed === '/laporan') {
         // Beri feedback di chat tempat dia memicu perintah (bisa pribadi atau grup)
         await sock.sendMessage(fromJid, { text: '⏳ Sedang mengirimkan laporan keuangan...' });
-        await sendDailyReport(sock, cleanNumber, profile);
+        await sendDailyReport(sock, cleanNumber, profile, fromJid);
         return;
       }
 
