@@ -189,8 +189,7 @@ async function startWhatsAppBot() {
                     '';
                     
     const textTrimmed = msgText.trim().toLowerCase();
-    if (!textTrimmed) return;
-
+    
     // Ambil nomor pengirim pesan
     let cleanNumber = '';
     let participantJid = '';
@@ -201,6 +200,12 @@ async function startWhatsAppBot() {
       cleanNumber = fromJid.split('@')[0];
     }
 
+    console.log(`\n[DEBUG] Pesan Masuk: "${msgText}" | Dari JID: ${fromJid} | Pengirim JID: ${participantJid || fromJid} | Clean Number: ${cleanNumber}`);
+
+    if (!textTrimmed) {
+      console.log('[DEBUG] Pesan kosong atau tidak didukung, diabaikan.');
+      return;
+    }
     if (!cleanNumber) return;
 
     try {
@@ -210,6 +215,8 @@ async function startWhatsAppBot() {
         .select('*')
         .eq('whatsapp_number', cleanNumber)
         .maybeSingle();
+
+      console.log(`[DEBUG] Database Lookup -> Error: ${error ? error.message : 'none'} | Profile Ditemukan: ${!!profile} | Data:`, profile);
 
       if (error || !profile) return; // Jika tidak terdaftar, diam saja
 
