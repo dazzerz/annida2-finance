@@ -295,8 +295,8 @@ async function startWhatsAppBot() {
         }
       }
 
-      // Jika belum menemukan profil (atau perintahnya adalah /setgrup / /unlinkgrup), cari berdasarkan nomor pengirim
-      if (!profile) {
+      // Jika belum menemukan profil (karena perintahnya adalah /setgrup / /unlinkgrup), cari berdasarkan nomor pengirim
+      if (!profile && !isTrigger) {
         const { data: senderProfile, error: sendErr } = await supabase
           .from('profiles')
           .select('*')
