@@ -350,7 +350,8 @@ async function startWhatsAppBot() {
         await sock.sendMessage(fromJid, {
           text: 'Pengguna nomer whatsapp ini sedang tidak menggunakan hp-nya mohon telpon jika ada hal yang urgent'
         });
-        console.log(`📨 Auto-reply terkirim ke ${fromJid}`);
+        const friendlyName = await getFriendlyName(sock, fromJid);
+        console.log(`📨 Auto-reply terkirim ke ${friendlyName}`);
       }
       return; // Jangan proses lebih lanjut, ini bukan perintah bot
     }
