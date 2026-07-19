@@ -39,6 +39,11 @@ let isReady = false;
 // Set untuk tracking pesan yang sudah diproses (mencegah duplikasi)
 const processedMsgIds = new Set();
 
+// Map untuk cooldown auto-reply per pengirim (mencegah spam balasan)
+// Key: JID pengirim, Value: timestamp terakhir auto-reply
+const autoReplyCooldown = new Map();
+const AUTO_REPLY_COOLDOWN_MS = 60 * 60 * 1000; // 1 jam
+
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
   return new Intl.NumberFormat('id-ID', {
@@ -319,6 +324,25 @@ async function startWhatsAppBot() {
 
     // Jika pesan dari saya sendiri (fromMe) tapi bukan perintah bot, abaikan
     if (isFromMe && !isCommand) return;
+
+    // ── AUTO-REPLY untuk chat pribadi ─────────────────────────────────────
+    // Balas sekali per jam jika ada chat masuk ke chat pribadi (bukan grup, bukan dari diri sendiri)
+    const isPrivateChat = !isGroup && 
+                          !isFromMe && 
+                          (fromJid.endsWith('@s.whatsapp.net') || fromJid.endsWith('@lid'));
+
+    if (isPrivateChat && !isCommand) {
+      const now = Date.now();
+      const lastReplied = autoReplyCooldown.get(fromJid) || 0;
+      if (now - lastReplied > AUTO_REPLY_COOLDOWN_MS) {
+        autoReplyCooldown.set(fromJid, now);
+        await sock.sendMessage(fromJid, {
+          text: 'Pengguna nomer whatsapp ini sedang tidak menggunakan hp-nya mohon telpon jika ada hal yang urgent'
+        });
+        console.log(`📨 Auto-reply terkirim ke ${fromJid}`);
+      }
+      return; // Jangan proses lebih lanjut, ini bukan perintah bot
+    }
 
     // Ambil nomor pengirim pesan
     let cleanNumber = '';
