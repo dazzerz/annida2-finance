@@ -73,34 +73,36 @@ function getCurrentMonthRange() {
 async function getMonthlySummary() {
   const { data: txs, error } = await supabase
     .from('transactions')
-    .select('amount, type, date');
+    .select('amount, type, date, sumber_dana');
     
   if (error) throw error;
   
   const { start, end } = getCurrentMonthRange();
   
-  let monthlyIncome = 0;
-  let monthlyExpense = 0;
-  let allTimeIncome = 0;
-  let allTimeExpense = 0;
+  let monthlyIncome = 0, monthlyExpense = 0;
+  let allTimeKasIncome = 0, allTimeKasExpense = 0;
+  let allTimeBankIncome = 0, allTimeBankExpense = 0;
   
   txs.forEach(tx => {
     const amt = parseFloat(tx.amount);
     const isCurrentMonth = tx.date >= start && tx.date <= end;
+    const isKas = tx.sumber_dana === 'kas';
     
     if (tx.type === 'income') {
-      allTimeIncome += amt;
       if (isCurrentMonth) monthlyIncome += amt;
+      if (isKas) allTimeKasIncome += amt; else allTimeBankIncome += amt;
     } else {
-      allTimeExpense += amt;
       if (isCurrentMonth) monthlyExpense += amt;
+      if (isKas) allTimeKasExpense += amt; else allTimeBankExpense += amt;
     }
   });
   
   return {
     income: monthlyIncome,
     expense: monthlyExpense,
-    balance: allTimeIncome - allTimeExpense
+    balance: (allTimeKasIncome + allTimeBankIncome) - (allTimeKasExpense + allTimeBankExpense),
+    kasBalance: allTimeKasIncome - allTimeKasExpense,
+    bankBalance: allTimeBankIncome - allTimeBankExpense,
   };
 }
 
@@ -134,7 +136,10 @@ async function sendReportToJid(sock, jid, profile) {
     const reportMessage = `Rekap Keuangan SMP Annida Al Islamy Setu
 Pemasukan (${monthName}) : ${formatRupiah(summary.income)}
 Pengeluaran (${monthName}) : ${formatRupiah(summary.expense)}
-Sisa saldo : ${formatRupiah(summary.balance)}`;
+
+💵 Kas Tunai  : ${formatRupiah(summary.kasBalance)}
+🏦 Bank       : ${formatRupiah(summary.bankBalance)}
+📊 Total Saldo: ${formatRupiah(summary.balance)}`;
 
     await sock.sendMessage(jid, { text: reportMessage });
     const friendlyName = await getFriendlyName(sock, jid);

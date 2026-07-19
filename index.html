@@ -70,6 +70,26 @@
           </div>
         </div>
 
+        <!-- Kas & Bank Cards -->
+        <div class="stats-grid stagger" style="grid-template-columns:repeat(2,1fr);margin-top:0;" role="region" aria-label="Rincian saldo">
+          <div class="stat-card" style="border-top:3px solid #f59e0b;">
+            <div class="stat-card-header">
+              <div class="stat-icon" style="background:#f59e0b22;font-size:1.2rem;">💵</div>
+              <div class="stat-trend" style="color:#f59e0b;">Kas Tunai</div>
+            </div>
+            <div class="stat-value" id="stat-kas">Rp0</div>
+            <div class="stat-label">Saldo Kas (Kepala Sekolah)</div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid #3b82f6;">
+            <div class="stat-card-header">
+              <div class="stat-icon" style="background:#3b82f622;font-size:1.2rem;">🏦</div>
+              <div class="stat-trend" style="color:#3b82f6;">Bank</div>
+            </div>
+            <div class="stat-value" id="stat-bank">Rp0</div>
+            <div class="stat-label">Saldo Rekening Bank</div>
+          </div>
+        </div>
+
         <!-- Charts Grid -->
         <div class="charts-grid" role="region" aria-label="Grafik keuangan">
           <!-- Line Chart -->
@@ -178,6 +198,15 @@
           <div class="form-group">
             <label class="form-label" for="modal-date">Tanggal <span style="color:var(--expense-color)">*</span></label>
             <input type="date" class="form-input" id="modal-date" required />
+          </div>
+
+          <!-- Sumber Dana -->
+          <div class="form-group">
+            <label class="form-label" for="modal-sumber-dana">Sumber Dana <span style="color:var(--expense-color)">*</span></label>
+            <select class="form-select" id="modal-sumber-dana" required>
+              <option value="bank">🏦 Bank</option>
+              <option value="kas">💵 Kas Tunai</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">

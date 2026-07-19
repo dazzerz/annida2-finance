@@ -47,7 +47,7 @@ export async function fetchTransactions(userId, filters = {}, page = 1, pageSize
 
 // ── Monthly summary ───────────────────────────────
 export async function fetchMonthlySummary(userId, year, month) {
-  let query = supabaseClient.from('transactions').select('amount, type');
+  let query = supabaseClient.from('transactions').select('amount, type, sumber_dana');
   if (year && month) {
     const mm = String(month).padStart(2, '0');
     const start = `${year}-${mm}-01`;
@@ -55,10 +55,30 @@ export async function fetchMonthlySummary(userId, year, month) {
     query = query.gte('date', start).lte('date', end);
   }
   const { data, error } = await query;
-  if (error) return { income: 0, expense: 0 };
-  const income = data.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-  const expense = data.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-  return { income, expense };
+  if (error) return { income: 0, expense: 0, kasBalance: 0, bankBalance: 0 };
+
+  let income = 0, expense = 0;
+  let kasIncome = 0, kasExpense = 0;
+  let bankIncome = 0, bankExpense = 0;
+
+  data.forEach(t => {
+    const amt = Number(t.amount);
+    const isKas = t.sumber_dana === 'kas';
+    if (t.type === 'income') {
+      income += amt;
+      if (isKas) kasIncome += amt; else bankIncome += amt;
+    } else {
+      expense += amt;
+      if (isKas) kasExpense += amt; else bankExpense += amt;
+    }
+  });
+
+  return {
+    income,
+    expense,
+    kasBalance: kasIncome - kasExpense,
+    bankBalance: bankIncome - bankExpense,
+  };
 }
 
 // ── 6-month trend ─────────────────────────────────

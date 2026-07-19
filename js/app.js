@@ -118,6 +118,8 @@ async function loadDashboard(user) {
   animateCounter(document.getElementById('stat-income'), summary.income);
   animateCounter(document.getElementById('stat-expense'), summary.expense);
   animateCounter(document.getElementById('stat-balance'), summary.income - summary.expense);
+  animateCounter(document.getElementById('stat-kas'), summary.kasBalance ?? 0);
+  animateCounter(document.getElementById('stat-bank'), summary.bankBalance ?? 0);
 
   // Charts
   setupChartDefaults();
@@ -144,6 +146,7 @@ function openModal(transaction = null) {
     document.getElementById('modal-description').value = transaction.description || '';
     document.getElementById('modal-amount').value = transaction.amount;
     document.getElementById('modal-date').value = transaction.date;
+    document.getElementById('modal-sumber-dana').value = transaction.sumber_dana || 'bank';
     populateCategoryDropdown(transaction.type);
     setTimeout(() => { document.getElementById('modal-category').value = transaction.category_id || ''; }, 50);
   } else {
@@ -211,6 +214,7 @@ async function main() {
       amount: parseFloat(document.getElementById('modal-amount').value),
       date: document.getElementById('modal-date').value,
       category_id: document.getElementById('modal-category').value || null,
+      sumber_dana: document.getElementById('modal-sumber-dana').value || 'bank',
     };
     if (!payload.type || !payload.amount || !payload.date) {
       showToast('Mohon isi semua kolom wajib.', 'warning'); return;
