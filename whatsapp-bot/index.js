@@ -104,6 +104,25 @@ async function getMonthlySummary() {
   };
 }
 
+// Helper: Resolve JID ke nama yang mudah dibaca (nama grup / nomor HP)
+async function getFriendlyName(sock, jid) {
+  try {
+    if (jid.endsWith('@g.us')) {
+      const meta = await sock.groupMetadata(jid);
+      return `Grup "${meta.subject}"`;
+    }
+    if (jid.endsWith('@s.whatsapp.net')) {
+      return `+${jid.split('@')[0]}`;
+    }
+    if (jid.endsWith('@lid')) {
+      const lidClean = jid.split('@')[0];
+      const pn = lidToPnMap.get(lidClean);
+      return pn ? `+${pn}` : `Chat Pribadi`;
+    }
+  } catch (_) {}
+  return jid;
+}
+
 // Function to generate and send report to a specific JID
 async function sendReportToJid(sock, jid, profile) {
   try {
@@ -118,7 +137,8 @@ Pengeluaran (${monthName}) : ${formatRupiah(summary.expense)}
 Sisa saldo : ${formatRupiah(summary.balance)}`;
 
     await sock.sendMessage(jid, { text: reportMessage });
-    console.log(`✉️  Laporan berhasil dikirim ke ${jid} (Akun: ${profile.full_name || 'User'})`);
+    const friendlyName = await getFriendlyName(sock, jid);
+    console.log(`✉️  Laporan berhasil dikirim ke ${friendlyName} (Akun: ${profile.full_name || 'User'})`);
   } catch (err) {
     console.error(`❌ Gagal mengirim laporan ke ${jid}:`, err);
   }
