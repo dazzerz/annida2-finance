@@ -84,6 +84,11 @@
           <select class="filter-select" id="filter-month">
             <option value="">Semua Bulan</option>
           </select>
+          <select class="filter-select" id="filter-sumber-dana">
+            <option value="">Semua Sumber</option>
+            <option value="bank">🏦 Bank</option>
+            <option value="kas">💵 Kas Tunai</option>
+          </select>
           <button class="btn btn-ghost btn-sm" id="clear-filter-btn">✕ Reset</button>
         </div>
 
@@ -93,10 +98,11 @@
             <thead>
               <tr>
                 <th style="width:48px;"></th>
-                <th style="width:40%;">Keterangan</th>
+                <th style="width:35%;">Keterangan</th>
                 <th>Tanggal</th>
                 <th>Kategori</th>
                 <th>Tipe</th>
+                <th>Sumber</th>
                 <th>Jumlah</th>
                 <th style="width:90px;text-align:right;" id="th-aksi">Aksi</th>
               </tr>
@@ -155,6 +161,13 @@
           <div class="form-group">
             <label class="form-label" for="modal-date">Tanggal *</label>
             <input type="date" class="form-input" id="modal-date" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-sumber-dana">Sumber Dana *</label>
+            <select class="form-select" id="modal-sumber-dana" required>
+              <option value="bank">🏦 Bank</option>
+              <option value="kas">💵 Kas Tunai</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -340,6 +353,7 @@
       document.getElementById('modal-description').value = data.description || '';
       document.getElementById('modal-amount').value = data.amount;
       document.getElementById('modal-date').value = data.date;
+      document.getElementById('modal-sumber-dana').value = data.sumber_dana || 'bank';
       populateCategoryDropdown(data.type);
       setTimeout(() => { document.getElementById('modal-category').value = data.category_id || ''; }, 50);
       document.getElementById('transaction-modal').classList.add('active');
@@ -449,11 +463,18 @@
       });
 
       document.getElementById('clear-filter-btn').addEventListener('click', () => {
-        filters = { search: '', type: '', categoryId: '', month: '' };
+        filters = { search: '', type: '', categoryId: '', month: '', sumberDana: '' };
         document.getElementById('search-input').value = '';
         document.getElementById('filter-type').value = '';
         document.getElementById('filter-category').value = '';
         document.getElementById('filter-month').value = '';
+        document.getElementById('filter-sumber-dana').value = '';
+        currentPage = 1;
+        loadTransactions();
+      });
+
+      document.getElementById('filter-sumber-dana').addEventListener('change', (e) => {
+        filters.sumberDana = e.target.value;
         currentPage = 1;
         loadTransactions();
       });
@@ -472,6 +493,7 @@
           amount: parseFloat(document.getElementById('modal-amount').value),
           date: document.getElementById('modal-date').value,
           category_id: document.getElementById('modal-category').value || null,
+          sumber_dana: document.getElementById('modal-sumber-dana').value || 'bank',
         };
         try {
           if (editingId) {

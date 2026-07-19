@@ -28,6 +28,7 @@ export async function fetchTransactions(userId, filters = {}, page = 1, pageSize
 
   if (filters.type) query = query.eq('type', filters.type);
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
+  if (filters.sumberDana) query = query.eq('sumber_dana', filters.sumberDana);
   if (filters.month) {
     const [year, month] = filters.month.split('-');
     const start = `${year}-${month}-01`;
@@ -158,7 +159,7 @@ export function renderTransactionsTable(transactions, canEdit = true) {
   if (!canEdit && thAksi) thAksi.style.display = 'none';
 
   if (!transactions.length) {
-    tbody.innerHTML = `<tr><td colspan="${canEdit ? 7 : 6}"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">Belum ada transaksi</div><div class="empty-state-desc">Belum ada data yang bisa ditampilkan</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${canEdit ? 8 : 7}"><div class="empty-state"><div class="empty-state-icon">💸</div><div class="empty-state-title">Belum ada transaksi</div><div class="empty-state-desc">Belum ada data yang bisa ditampilkan</div></div></td></tr>`;
     return;
   }
   tbody.innerHTML = transactions.map(t => {
@@ -175,6 +176,7 @@ export function renderTransactionsTable(transactions, canEdit = true) {
       <td>${formatDate(t.date)}</td>
       <td><span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">${cat?.name || 'Lainnya'}</span></td>
       <td><span class="badge ${isIncome ? 'badge-income' : 'badge-expense'}">${isIncome ? '↑ Pemasukan' : '↓ Pengeluaran'}</span></td>
+      <td><span class="badge" style="background:${t.sumber_dana === 'kas' ? '#f59e0b22' : '#3b82f622'};color:${t.sumber_dana === 'kas' ? '#f59e0b' : '#3b82f6'}">${t.sumber_dana === 'kas' ? '💵 Kas' : '🏦 Bank'}</span></td>
       <td class="transaction-amount ${t.type}">${isIncome ? '+' : '-'}${formatCurrency(t.amount)}</td>
       ${actionHtml}
     </tr>`;
