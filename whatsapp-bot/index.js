@@ -39,10 +39,9 @@ let isReady = false;
 // Set untuk tracking pesan yang sudah diproses (mencegah duplikasi)
 const processedMsgIds = new Set();
 
-// Map untuk cooldown auto-reply per pengirim (mencegah spam balasan)
-// Key: JID pengirim, Value: timestamp terakhir auto-reply
-const autoReplyCooldown = new Map();
-const AUTO_REPLY_COOLDOWN_MS = 60 * 60 * 1000; // 1 jam
+// Set JID yang sudah di-auto-reply (reset ketika user membaca chat)
+// Tujuan: auto-reply hanya 1x per "sesi belum dibaca" per orang
+const autoRepliedJids = new Set();
 
 // Helper: Format number to Rupiah (e.g. Rp 15.000)
 function formatRupiah(number) {
@@ -281,6 +280,20 @@ async function startWhatsAppBot() {
       }
     }
   });
+  // Deteksi ketika user membaca/membuka chat → reset auto-reply untuk JID tersebut
+  sock.ev.on('chats.update', (updates) => {
+    for (const update of updates) {
+      const jid = update.id;
+      if (!jid) continue;
+      // unreadCount = 0 atau null = user sudah baca chat ini
+      if (update.unreadCount !== undefined && (update.unreadCount === 0 || update.unreadCount === null)) {
+        if (autoRepliedJids.has(jid)) {
+          autoRepliedJids.delete(jid);
+          console.log(`👁️  User membaca chat → auto-reply direset untuk ${jid}`);
+        }
+      }
+    }
+  });
 
   // Listen to incoming messages
   sock.ev.on('messages.upsert', async (m) => {
@@ -332,10 +345,8 @@ async function startWhatsAppBot() {
                           (fromJid.endsWith('@s.whatsapp.net') || fromJid.endsWith('@lid'));
 
     if (isPrivateChat && !isCommand) {
-      const now = Date.now();
-      const lastReplied = autoReplyCooldown.get(fromJid) || 0;
-      if (now - lastReplied > AUTO_REPLY_COOLDOWN_MS) {
-        autoReplyCooldown.set(fromJid, now);
+      if (!autoRepliedJids.has(fromJid)) {
+        autoRepliedJids.add(fromJid);
         await sock.sendMessage(fromJid, {
           text: 'Pengguna nomer whatsapp ini sedang tidak menggunakan hp-nya mohon telpon jika ada hal yang urgent'
         });
