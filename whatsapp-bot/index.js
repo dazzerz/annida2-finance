@@ -69,12 +69,11 @@ function getCurrentMonthRange() {
   };
 }
 
-// Function to fetch monthly summary and overall balance for a user
-async function getMonthlySummary(userId) {
+// Function to fetch monthly summary and overall balance (semua transaksi semua akun)
+async function getMonthlySummary() {
   const { data: txs, error } = await supabase
     .from('transactions')
-    .select('amount, type, date')
-    .eq('user_id', userId);
+    .select('amount, type, date');
     
   if (error) throw error;
   
@@ -108,7 +107,7 @@ async function getMonthlySummary(userId) {
 // Function to generate and send report to a specific JID
 async function sendReportToJid(sock, jid, profile) {
   try {
-    const summary = await getMonthlySummary(profile.id);
+    const summary = await getMonthlySummary();
     
     let monthName = new Date().toLocaleString('id-ID', { month: 'long' });
     monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
