@@ -10,16 +10,16 @@ export function downloadTemplate(categories) {
   if (!XLSX) { alert('Library Excel belum siap, coba refresh halaman.'); return; }
 
   // Sheet 1: Template transaksi
-  const headers = ['tanggal', 'keterangan', 'tipe', 'kategori', 'jumlah'];
+  const headers = ['tanggal', 'keterangan', 'tipe', 'kategori', 'jumlah', 'sumber_dana'];
   const instructions = [
-    ['FORMAT: YYYY-MM-DD', 'Keterangan transaksi', 'pemasukan / pengeluaran', 'Nama kategori (lihat sheet Kategori)', 'Angka tanpa titik/koma (contoh: 50000)'],
+    ['FORMAT: YYYY-MM-DD', 'Keterangan transaksi', 'pemasukan / pengeluaran', 'Nama kategori (lihat sheet Kategori)', 'Angka tanpa titik/koma (contoh: 50000)', 'kas / bank'],
   ];
   const samples = [
-    ['2026-07-01', 'Gaji bulan Juli', 'pemasukan', 'Gaji', 3500000],
-    ['2026-07-02', 'Makan siang', 'pengeluaran', 'Makanan', 35000],
-    ['2026-07-03', 'Bensin motor', 'pengeluaran', 'Transport', 50000],
-    ['2026-07-05', 'Freelance project', 'pemasukan', 'Freelance', 1500000],
-    ['2026-07-10', 'Belanja bulanan', 'pengeluaran', 'Belanja', 450000],
+    ['2026-07-01', 'Gaji bulan Juli', 'pemasukan', 'Gaji', 3500000, 'bank'],
+    ['2026-07-02', 'Makan siang', 'pengeluaran', 'Makanan', 35000, 'kas'],
+    ['2026-07-03', 'Bensin motor', 'pengeluaran', 'Transport', 50000, 'kas'],
+    ['2026-07-05', 'Freelance project', 'pemasukan', 'Freelance', 1500000, 'bank'],
+    ['2026-07-10', 'Belanja bulanan', 'pengeluaran', 'Belanja', 450000, 'kas'],
   ];
 
   const txSheet = XLSX.utils.aoa_to_sheet([headers, ...instructions, ...samples]);
@@ -31,6 +31,7 @@ export function downloadTemplate(categories) {
     { wch: 14 }, // tipe
     { wch: 18 }, // kategori
     { wch: 16 }, // jumlah
+    { wch: 14 }, // sumber_dana
   ];
 
   // Sheet 2: Daftar kategori valid
@@ -48,8 +49,9 @@ export function downloadTemplate(categories) {
     ['3. Kolom TIPE: isi "pemasukan" atau "pengeluaran" (huruf kecil)'],
     ['4. Kolom KATEGORI: isi nama kategori sesuai daftar di sheet "Kategori"'],
     ['5. Kolom JUMLAH: angka saja, tanpa Rp, titik, atau koma (contoh: 50000)'],
-    ['6. Jangan mengubah nama kolom di baris pertama'],
-    ['7. Simpan file dalam format .xlsx atau .xls sebelum diupload'],
+    ['6. Kolom SUMBER_DANA: isi "kas" (Kas Tunai) atau "bank" (Rekening Bank)'],
+    ['7. Jangan mengubah nama kolom di baris pertama'],
+    ['8. Simpan file dalam format .xlsx atau .xls sebelum diupload'],
     [''],
     ['TIPS: Gunakan sheet "Kategori" sebagai referensi kategori yang tersedia'],
   ]);
@@ -180,7 +182,8 @@ export function parseExcelFile(file) {
                 keterangan: simplifyBSIDescription(row[descIdx]),
                 tipe: tipe,
                 kategori: '', // kosong, biarkan user mapping jika perlu, atau jadi 'Lainnya'
-                jumlah: jumlah
+                jumlah: jumlah,
+                sumber_dana: 'bank' // Mutasi bank pasti 'bank'
               });
             }
           });
@@ -191,6 +194,7 @@ export function parseExcelFile(file) {
           const tipeIdx = headers.findIndex(h => h.toLowerCase() === 'tipe') > -1 ? headers.findIndex(h => h.toLowerCase() === 'tipe') : 2;
           const katIdx = headers.findIndex(h => h.toLowerCase() === 'kategori') > -1 ? headers.findIndex(h => h.toLowerCase() === 'kategori') : 3;
           const jmlIdx = headers.findIndex(h => h.toLowerCase() === 'jumlah') > -1 ? headers.findIndex(h => h.toLowerCase() === 'jumlah') : 4;
+          const sumIdx = headers.findIndex(h => h.toLowerCase() === 'sumber_dana') > -1 ? headers.findIndex(h => h.toLowerCase() === 'sumber_dana') : 5;
 
           dataRows.forEach(row => {
             const tipe = String(row[tipeIdx] || '').toLowerCase().trim();
@@ -201,7 +205,8 @@ export function parseExcelFile(file) {
                 keterangan: row[ketIdx],
                 tipe: row[tipeIdx],
                 kategori: row[katIdx],
-                jumlah: row[jmlIdx]
+                jumlah: row[jmlIdx],
+                sumber_dana: row[sumIdx]
               });
             }
           });
@@ -283,12 +288,17 @@ export async function validateAndMapRows(rows, categories) {
       errors.push(`Kategori "${row.kategori}" tidak ditemukan (akan diisi "Lainnya")`);
     }
 
+    // Sumber Dana
+    const sumberRaw = String(row.sumber_dana || '').toLowerCase().trim();
+    const sumberDana = (sumberRaw === 'kas') ? 'kas' : 'bank'; // Default to bank if empty or invalid
+
     results.push({
       rowNum,
       date,
       type,
       amount,
       description,
+      sumber_dana: sumberDana,
       category_id: categoryId,
       categoryName: matchedCat?.name || row.kategori || '-',
       categoryIcon: matchedCat?.icon || '💰',
