@@ -67,15 +67,23 @@ function updateGreeting(user) {
       logoutBtn.addEventListener('click', () => window.location.href = './login.html');
     }
     
-    // Hide Transaksi and Budget in sidebar for guests
+    // Hide Transaksi, Budget, and RAB Kelas in sidebar for guests
     const navTransactions = document.getElementById('nav-transactions');
     if (navTransactions) navTransactions.style.display = 'none';
     const navBudget = document.getElementById('nav-budget');
     if (navBudget) navBudget.style.display = 'none';
+    const navRab = document.getElementById('nav-rab');
+    if (navRab) navRab.style.display = 'none';
     
     // Hide Quick Actions / Buttons
     const addTxBtn = document.getElementById('add-transaction-btn');
     if (addTxBtn) addTxBtn.style.display = 'none';
+
+    // Show Guest Unlock Button if not already unlocked
+    const btnUnlock = document.getElementById('btn-guest-unlock');
+    if (btnUnlock && !sessionStorage.getItem('guest_stats')) {
+      btnUnlock.style.display = 'flex';
+    }
   }
 }
 
@@ -115,11 +123,30 @@ async function loadDashboard(user) {
   ]);
 
   // Stats
-  animateCounter(document.getElementById('stat-income'), summary.income);
-  animateCounter(document.getElementById('stat-expense'), summary.expense);
-  animateCounter(document.getElementById('stat-balance'), summary.income - summary.expense);
-  animateCounter(document.getElementById('stat-kas'), summary.kasBalance ?? 0);
-  animateCounter(document.getElementById('stat-bank'), summary.bankBalance ?? 0);
+  if (!user) {
+    const cachedStats = sessionStorage.getItem('guest_stats');
+    if (cachedStats) {
+       const s = JSON.parse(cachedStats);
+       animateCounter(document.getElementById('stat-income'), s.income);
+       animateCounter(document.getElementById('stat-expense'), s.expense);
+       animateCounter(document.getElementById('stat-balance'), s.balance);
+       animateCounter(document.getElementById('stat-kas'), s.kas);
+       animateCounter(document.getElementById('stat-bank'), s.bank);
+    } else {
+       const mask = 'Rp ***.***';
+       document.getElementById('stat-income').textContent = mask;
+       document.getElementById('stat-expense').textContent = mask;
+       document.getElementById('stat-balance').textContent = mask;
+       document.getElementById('stat-kas').textContent = mask;
+       document.getElementById('stat-bank').textContent = mask;
+    }
+  } else {
+    animateCounter(document.getElementById('stat-income'), summary.income);
+    animateCounter(document.getElementById('stat-expense'), summary.expense);
+    animateCounter(document.getElementById('stat-balance'), summary.income - summary.expense);
+    animateCounter(document.getElementById('stat-kas'), summary.kasBalance ?? 0);
+    animateCounter(document.getElementById('stat-bank'), summary.bankBalance ?? 0);
+  }
 
   // Charts
   setupChartDefaults();
@@ -276,6 +303,42 @@ async function main() {
       window.open(url, '_blank');
     } catch (err) {
       alert('Gagal mengambil data hari ini: ' + err.message);
+    } finally {
+      btn.innerHTML = originalText;
+    }
+  });
+
+  // Guest Unlock Button
+  document.getElementById('btn-guest-unlock')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const pass = prompt('Masukkan Password Akses:');
+    if (!pass) return;
+
+    const btn = e.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Tunggu...';
+
+    try {
+      const monthFilter = document.getElementById('dashboard-month')?.value;
+      let p_year = null, p_month = null;
+      if (monthFilter) {
+        [p_year, p_month] = monthFilter.split('-').map(Number);
+      }
+
+      const { data, error } = await supabaseClient.rpc('guest_get_totals', {
+        p_pass: pass,
+        p_year: p_year,
+        p_month: p_month
+      });
+
+      if (error) throw error;
+
+      sessionStorage.setItem('guest_stats', JSON.stringify(data));
+      showToast('Kunci berhasil dibuka!', 'success');
+      btn.style.display = 'none';
+      loadDashboard(currentUser); // Reload dashboard to show numbers
+    } catch (err) {
+      showToast(err.message || 'Password salah atau gagal membuka kunci', 'error');
     } finally {
       btn.innerHTML = originalText;
     }
