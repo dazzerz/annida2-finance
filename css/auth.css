@@ -23,6 +23,11 @@
   justify-content: center;
   padding: 3rem;
   overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+[data-theme="light"] .auth-panel {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
 }
 
 .auth-panel::before {
@@ -95,6 +100,13 @@
   padding: 1.5rem;
   backdrop-filter: blur(10px);
   animation: float 4s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+[data-theme="light"] .auth-illustration-card {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .stats-mini {
@@ -109,11 +121,17 @@
   border-radius: var(--radius-md);
   padding: 0.75rem;
   text-align: left;
+  transition: background 0.3s ease;
+}
+
+[data-theme="light"] .stat-mini-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .stat-mini-label {
   font-size: 0.65rem;
-  color: #cbd5e1;
+  color: var(--text-muted);
   margin-bottom: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -122,7 +140,7 @@
 .stat-mini-value {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 .stat-mini-value.income { color: var(--income-color); }
@@ -150,7 +168,7 @@
   font-weight: 700;
   line-height: 1.35;
   margin-bottom: 1rem;
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 .auth-tagline span {
@@ -162,7 +180,7 @@
 
 .auth-subtitle {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   line-height: 1.7;
 }
 
@@ -180,7 +198,7 @@
   align-items: center;
   gap: 0.75rem;
   font-size: 0.875rem;
-  color: #cbd5e1;
+  color: var(--text-secondary);
 }
 
 .auth-feature-icon {
