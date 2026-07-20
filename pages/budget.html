@@ -172,6 +172,11 @@
         document.getElementById('nav-user-email').textContent = user.email;
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
+        if (!sessionStorage.getItem('guest_mode_active')) {
+          window.location.href = '../login.html';
+          return;
+        }
+        
         const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
         
         // Sembunyikan menu RAB Kelas untuk guest

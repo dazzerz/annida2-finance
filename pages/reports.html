@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="../css/global.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
   
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js?v=3" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js?v=4" defer></script>
   <!-- jsPDF for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=3" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=4" defer></script>
 </head>
 <body>
   <div class="app-layout">
@@ -247,6 +247,11 @@
         document.getElementById('nav-user-email').textContent = user.email;
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
+        if (!sessionStorage.getItem('guest_mode_active')) {
+          window.location.href = '../login.html';
+          return;
+        }
+
         const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
         
         // Hide Transaksi, Budget, and RAB Kelas in sidebar for guests

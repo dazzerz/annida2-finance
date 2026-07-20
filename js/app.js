@@ -81,8 +81,21 @@ function updateGreeting(user) {
 
     // Show Guest Unlock Button if not already unlocked
     const btnUnlock = document.getElementById('btn-guest-unlock');
-    if (btnUnlock && !sessionStorage.getItem('guest_stats')) {
-      btnUnlock.style.display = 'flex';
+    if (btnUnlock) {
+      if (!sessionStorage.getItem('guest_stats')) {
+        btnUnlock.style.display = 'flex';
+        btnUnlock.innerHTML = '<span>🔒</span> Buka Kunci Angka';
+        btnUnlock.classList.remove('btn-danger');
+      } else {
+        btnUnlock.style.display = 'flex';
+        btnUnlock.innerHTML = '<span>🔓</span> Kunci Kembali';
+        btnUnlock.classList.add('btn-danger');
+        btnUnlock.onclick = (e) => {
+          e.preventDefault();
+          sessionStorage.removeItem('guest_stats');
+          window.location.reload();
+        };
+      }
     }
   }
 }
@@ -179,6 +192,38 @@ async function loadDashboard(user) {
     }
   });
 
+  // Also apply lock overlay to the summary grid if locked guest
+  const summaryGrid = document.querySelector('.summary-grid');
+  if (summaryGrid) {
+     const existingSummaryLock = summaryGrid.querySelector('.summary-locked-overlay');
+     if (existingSummaryLock) existingSummaryLock.remove();
+     
+     if (isLockedGuest) {
+        const overlay = document.createElement('div');
+        overlay.className = 'summary-locked-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'rgba(15, 23, 42, 0.6)';
+        overlay.style.backdropFilter = 'blur(6px)';
+        overlay.style.zIndex = '5';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.borderRadius = '16px';
+        overlay.innerHTML = `
+          <div style="font-size:3rem;margin-bottom:0.5rem;text-align:center;">🔒</div>
+          <div style="color:var(--text-primary);text-align:center;font-weight:600;font-size:1.1rem;">Angka Disembunyikan</div>
+        `;
+        
+        summaryGrid.style.position = 'relative';
+        summaryGrid.appendChild(overlay);
+     }
+  }
+
   // Auto-prompt password for locked guests after a short delay
   if (isLockedGuest && !window.hasPromptedGuest) {
     window.hasPromptedGuest = true;
@@ -219,10 +264,14 @@ function closeModal() {
 
 // ── Main ──────────────────────────────────────────
 async function main() {
+  const user = await getOptionalUser();
+  if (!user && !sessionStorage.getItem('guest_mode_active')) {
+    window.location.href = './login.html';
+    return;
+  }
+
   injectLayout('dashboard', 'Selamat Datang, 👋', 'Memuat...');
   applySavedTheme();
-
-  const user = await getOptionalUser();
 
   updateGreeting(user);
   initSidebar(user);

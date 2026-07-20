@@ -104,6 +104,8 @@ async function handleRegister(e) {
 // ── LOGOUT ────────────────────────────────────────
 export async function handleLogout() {
   await supabaseClient.auth.signOut();
+  sessionStorage.removeItem('guest_mode_active');
+  sessionStorage.removeItem('guest_stats');
   const isInPages = window.location.pathname.includes('/pages/');
   window.location.href = isInPages ? '../login.html' : './login.html';
 }
