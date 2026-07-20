@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="../css/global.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
   <!-- SheetJS untuk baca/buat Excel -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js?v=3" defer></script>
 </head>
 <body>
   <div class="app-layout">
@@ -399,12 +399,30 @@
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
         const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
+        
+        // Sembunyikan menu RAB Kelas untuk semua guest (baik terkunci maupun tidak)
+        const navRab = document.getElementById('nav-rab');
+        if (navRab) navRab.style.display = 'none';
+
         if (!isGuestUnlocked) {
-          window.location.href = '../index.html';
-          return;
+          const container = document.querySelector('.table-container');
+          if (container) {
+            container.innerHTML = `
+              <div class="locked-overlay" style="position: relative; min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(5px); border-radius: 12px; border: 1px solid var(--border-color); margin-top: 1rem;">
+                <div style="font-size:3rem;margin-bottom:1rem;text-align:center;">🔒</div>
+                <div style="color:var(--text-primary);text-align:center;font-weight:600;font-size:1.1rem;">Privasi Terkunci</div>
+                <div style="color:var(--text-secondary);text-align:center;font-size:0.9rem;margin-bottom:1.5rem;">Silakan buka kunci angka terlebih dahulu untuk melihat transaksi.</div>
+                <a href="../index.html" class="btn btn-primary" style="text-decoration:none;">Buka Kunci di Dashboard</a>
+              </div>
+            `;
+          }
+          const pagination = document.getElementById('pagination');
+          if (pagination) pagination.style.display = 'none';
+          
+          return; // Jangan lanjutkan muat data
         }
         
-        // Sembunyikan tombol & menu untuk guest yang sudah unlock
+        // Sembunyikan tombol aksi untuk guest yang SUDAH unlock
         const navBudget = document.getElementById('nav-budget');
         if (navBudget) navBudget.style.display = 'none';
         

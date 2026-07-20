@@ -178,6 +178,14 @@ async function loadDashboard(user) {
       container.appendChild(overlay);
     }
   });
+
+  // Auto-prompt password for locked guests after a short delay
+  if (isLockedGuest && !window.hasPromptedGuest) {
+    window.hasPromptedGuest = true;
+    setTimeout(() => {
+      document.getElementById('btn-guest-unlock')?.click();
+    }, 500);
+  }
 }
 
 // ── Transaction Modal ─────────────────────────────

@@ -172,9 +172,33 @@
         document.getElementById('nav-user-email').textContent = user.email;
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
-        // Guests are not allowed to access Budget page
-        window.location.href = '../index.html';
-        return;
+        const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
+        
+        // Sembunyikan menu RAB Kelas untuk guest
+        const navRab = document.getElementById('nav-rab');
+        if (navRab) navRab.style.display = 'none';
+
+        if (!isGuestUnlocked) {
+          const container = document.querySelector('.table-container') || document.querySelector('.budget-list-container');
+          if (container) {
+            container.innerHTML = `
+              <div class="locked-overlay" style="position: relative; min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(5px); border-radius: 12px; border: 1px solid var(--border-color); margin-top: 1rem;">
+                <div style="font-size:3rem;margin-bottom:1rem;text-align:center;">🔒</div>
+                <div style="color:var(--text-primary);text-align:center;font-weight:600;font-size:1.1rem;">Privasi Terkunci</div>
+                <div style="color:var(--text-secondary);text-align:center;font-size:0.9rem;margin-bottom:1.5rem;">Silakan buka kunci angka terlebih dahulu untuk melihat budget.</div>
+                <a href="../index.html" class="btn btn-primary" style="text-decoration:none;">Buka Kunci di Dashboard</a>
+              </div>
+            `;
+          }
+          return; // Jangan muat data budget
+        }
+        
+        // Sembunyikan tombol tambah budget untuk guest yang sudah unlock
+        const addBtn = document.getElementById('add-budget-btn');
+        if (addBtn) addBtn.style.display = 'none';
+        
+        document.getElementById('logout-btn').innerHTML = '<span>🔑</span> Login';
+        document.getElementById('logout-btn').addEventListener('click', () => window.location.href = '../login.html');
       }
 
       // Sidebar

@@ -34,21 +34,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load from DB
     await loadRAB();
   } else {
-    // Guest mode
-    const navUserName = document.getElementById('nav-user-name');
-    if (navUserName) navUserName.textContent = 'Guest';
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-      logoutBtn.innerHTML = '<span class="nav-icon">🔑</span> Login';
-      logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
-    }
-    const navTransactions = document.getElementById('nav-transactions');
-    if (navTransactions) navTransactions.style.display = 'none';
-    const navBudget = document.getElementById('nav-budget');
-    if (navBudget) navBudget.style.display = 'none';
-    
-    // Guest using default state
-    calculateRAB();
+    // Guest mode is not allowed for RAB Kelas
+    window.location.href = '../index.html';
+    return;
   }
 
   setupEventListeners();
