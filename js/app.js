@@ -158,6 +158,26 @@ async function loadDashboard(user) {
   // Lists
   renderRecentTransactions(recent);
   renderBudgetOverview(budgets, spending);
+
+  // Apply Lock Overlays
+  const lockContainers = ['trend-chart-wrapper', 'donut-chart-wrapper', 'recent-transactions'];
+  lockContainers.forEach(id => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    
+    const existing = container.querySelector('.locked-overlay');
+    if (existing) existing.remove();
+    
+    if (isLockedGuest) {
+      const overlay = document.createElement('div');
+      overlay.className = 'locked-overlay';
+      overlay.innerHTML = `
+        <div class="locked-overlay-icon">🔒</div>
+        <div class="locked-overlay-text">Privasi Terkunci<br/><span style="font-size:0.75rem;font-weight:400;opacity:0.8;">Buka Kunci Angka di atas untuk melihat data.</span></div>
+      `;
+      container.appendChild(overlay);
+    }
+  });
 }
 
 // ── Transaction Modal ─────────────────────────────
