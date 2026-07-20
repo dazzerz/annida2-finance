@@ -111,15 +111,17 @@ async function loadDashboard(user) {
   }
 
   const userId = user ? user.id : null;
+  const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
+  const isLockedGuest = !user && !isGuestUnlocked;
 
   const [, summary, trend, catData, recent, budgets, spending] = await Promise.all([
-    fetchCategories(userId),
-    fetchMonthlySummary(userId, year, month),
-    fetchMonthlyTrend(userId),
-    fetchCategoryBreakdown(userId, year, month),
-    fetchRecentTransactions(userId),
-    fetchBudgets(userId, year, month),
-    fetchBudgetSpending(userId, year, month),
+    isLockedGuest ? Promise.resolve([]) : fetchCategories(userId),
+    isLockedGuest ? Promise.resolve({ income: 0, expense: 0, kasBalance: 0, bankBalance: 0 }) : fetchMonthlySummary(userId, year, month),
+    isLockedGuest ? Promise.resolve({ labels: [], income: [], expense: [] }) : fetchMonthlyTrend(userId),
+    isLockedGuest ? Promise.resolve([]) : fetchCategoryBreakdown(userId, year, month),
+    isLockedGuest ? Promise.resolve({ data: [] }) : fetchRecentTransactions(userId),
+    isLockedGuest ? Promise.resolve([]) : fetchBudgets(userId, year, month),
+    isLockedGuest ? Promise.resolve([]) : fetchBudgetSpending(userId, year, month),
   ]);
 
   // Stats

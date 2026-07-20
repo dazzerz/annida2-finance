@@ -388,6 +388,7 @@
       applySavedTheme();
 
       const user = await getOptionalUser();
+      currentUser = user;
       if (user) {
         userId = user.id;
         const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Pengguna';
@@ -397,9 +398,25 @@
         document.getElementById('nav-user-email').textContent = user.email;
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
-        // Guests are not allowed to access Transaksi page
-        window.location.href = '../index.html';
-        return;
+        const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
+        if (!isGuestUnlocked) {
+          window.location.href = '../index.html';
+          return;
+        }
+        
+        // Sembunyikan tombol & menu untuk guest yang sudah unlock
+        const navBudget = document.getElementById('nav-budget');
+        if (navBudget) navBudget.style.display = 'none';
+        
+        const addTxBtn = document.getElementById('add-transaction-btn');
+        if (addTxBtn) addTxBtn.style.display = 'none';
+        const importBtn = document.getElementById('import-excel-btn');
+        if (importBtn) importBtn.style.display = 'none';
+        const thAksi = document.getElementById('th-aksi');
+        if (thAksi) thAksi.style.display = 'none';
+
+        document.getElementById('logout-btn').innerHTML = '<span>🔑</span> Login';
+        document.getElementById('logout-btn').addEventListener('click', () => window.location.href = '../login.html');
       }
 
       // Sidebar
