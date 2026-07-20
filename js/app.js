@@ -264,6 +264,12 @@ function closeModal() {
 
 // ── Main ──────────────────────────────────────────
 async function main() {
+  // Clear guest unlock state on page refresh
+  const navEntries = performance.getEntriesByType('navigation');
+  if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+    sessionStorage.removeItem('guest_stats');
+  }
+
   const user = await getOptionalUser();
   if (!user && !sessionStorage.getItem('guest_mode_active')) {
     window.location.href = './login.html';

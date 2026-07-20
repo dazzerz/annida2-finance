@@ -176,6 +176,11 @@
           window.location.href = '../login.html';
           return;
         }
+
+        const navEntries = performance.getEntriesByType('navigation');
+        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+          sessionStorage.removeItem('guest_stats');
+        }
         
         const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
         

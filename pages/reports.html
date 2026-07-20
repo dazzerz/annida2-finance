@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="../css/global.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
   
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js?v=4" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js?v=5" defer></script>
   <!-- jsPDF for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=4" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=5" defer></script>
 </head>
 <body>
   <div class="app-layout">
@@ -250,6 +250,11 @@
         if (!sessionStorage.getItem('guest_mode_active')) {
           window.location.href = '../login.html';
           return;
+        }
+
+        const navEntries = performance.getEntriesByType('navigation');
+        if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+          sessionStorage.removeItem('guest_stats');
         }
 
         const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
