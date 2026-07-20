@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="../css/global.css" />
   <link rel="stylesheet" href="../css/dashboard.css" />
   
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js?v=3" defer></script>
   <!-- jsPDF for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=3" defer></script>
 </head>
 <body>
   <div class="app-layout">
@@ -247,6 +247,40 @@
         document.getElementById('nav-user-email').textContent = user.email;
         document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
       } else {
+        const isGuestUnlocked = !!sessionStorage.getItem('guest_stats');
+        
+        // Hide Transaksi, Budget, and RAB Kelas in sidebar for guests
+        const navTransactions = document.getElementById('nav-transactions');
+        if (navTransactions) navTransactions.style.display = 'none';
+        const navBudget = document.getElementById('nav-budget');
+        if (navBudget) navBudget.style.display = 'none';
+        const navRab = document.getElementById('nav-rab');
+        if (navRab) navRab.style.display = 'none';
+
+        if (!isGuestUnlocked) {
+          const content = document.querySelector('.page-content');
+          if (content) {
+            // Hide real data containers
+            const elementsToHide = ['.reports-controls', '.report-summary-grid', '.report-chart-grid', '.export-section'];
+            elementsToHide.forEach(sel => {
+              const el = content.querySelector(sel);
+              if (el) el.style.display = 'none';
+            });
+            // Inject lock overlay
+            const overlay = document.createElement('div');
+            overlay.innerHTML = `
+              <div class="locked-overlay" style="position: relative; min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(5px); border-radius: 12px; border: 1px solid var(--border-color); margin-top: 2rem;">
+                <div style="font-size:3rem;margin-bottom:1rem;text-align:center;">🔒</div>
+                <div style="color:var(--text-primary);text-align:center;font-weight:600;font-size:1.1rem;">Privasi Terkunci</div>
+                <div style="color:var(--text-secondary);text-align:center;font-size:0.9rem;margin-bottom:1.5rem;">Silakan buka kunci angka terlebih dahulu untuk melihat Laporan.</div>
+                <a href="../index.html" class="btn btn-primary" style="text-decoration:none;">Buka Kunci di Dashboard</a>
+              </div>
+            `;
+            content.appendChild(overlay);
+          }
+          return; // Stop execution to prevent fetching
+        }
+
         document.getElementById('user-avatar').textContent = 'G';
         document.getElementById('nav-user-name').textContent = 'Guest';
         document.getElementById('nav-user-email').textContent = 'Read-Only Access';
@@ -256,12 +290,6 @@
           logoutBtn.addEventListener('click', () => window.location.href = '../login.html');
         }
         currentReportData && (currentReportData.userName = 'Guest');
-        
-        // Hide Transaksi and Budget in sidebar for guests
-        const navTransactions = document.getElementById('nav-transactions');
-        if (navTransactions) navTransactions.style.display = 'none';
-        const navBudget = document.getElementById('nav-budget');
-        if (navBudget) navBudget.style.display = 'none';
       }
 
       // Sidebar
